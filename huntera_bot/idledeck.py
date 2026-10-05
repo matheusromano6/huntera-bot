@@ -5,6 +5,7 @@ import urllib.request
 
 from playwright.sync_api import sync_playwright
 
+from . import launcher
 from .account import Account
 
 GAME_HOST = "huntera.com.br"
@@ -27,10 +28,13 @@ class Pool:
         self._pw = None
         self.browser = None
         self._accounts = {}      # id(page) -> Account
+        self._warned_empty = False
 
-    def open(self):
+    def open(self, launch=True, stop=None):
+        """Conecta. Se o IdleDeck nao esta com a porta, ABRE ele (launch=True) - ver launcher.py."""
         if not port_open(self.cdp_url):
-            raise RuntimeError(f"IdleDeck sem depuracao remota em {self.cdp_url} (abra o IdleDeck com a porta ligada)")
+            if not launch or not launcher.launch(self.cdp_url, lambda: port_open(self.cdp_url), self.log, stop):
+                raise RuntimeError(f"IdleDeck sem depuracao remota em {self.cdp_url}")
         self._pw = sync_playwright().start()
         self.browser = self._pw.chromium.connect_over_cdp(self.cdp_url)
 
@@ -55,6 +59,11 @@ class Pool:
         self._accounts = known
         if gone or new:
             self.log(f"paginas do Huntera: {len(known)} (novas {len(new)}, fechadas {len(gone)})")
+        if not known and not self._warned_empty:
+            self._warned_empty = True
+            self.log("Aguardando as contas do Huntera abrirem no IdleDeck...")
+        elif known:
+            self._warned_empty = False
         # nomes ficam so' depois da 1a leitura
         for acc in known.values():
             if not acc.name:

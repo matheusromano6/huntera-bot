@@ -42,7 +42,7 @@ class Runner:
     def _run(self):
         pool = Pool(self.cfg["cdp_url"], self.log)
         try:
-            pool.open()
+            pool.open(launch=True, stop=self.stop_event)
             self.connected = True
             self.engine = Engine(pool.refresh(), self.cfg, self.log, refresh=pool.refresh,
                                  memory=Memory(os.path.join(ROOT, "memory.json")))

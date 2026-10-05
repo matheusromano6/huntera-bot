@@ -14,8 +14,9 @@ na ordem de progressao do jogo; escolhe, ordena e define o pull de cada uma), **
 
 ## Linha de comando
 
-1. Abra o IdleDeck com a depuracao remota ligada (o bot do Baiak, perfil "IdleDeck", abre o app assim; porta padrao
-   `9224`) e deixe as contas do Huntera abertas.
+1. Deixe as contas do Huntera nos slots do IdleDeck. Ao clicar em **Iniciar**, o bot abre o IdleDeck sozinho com a
+   depuracao remota ligada (porta padrao `9224`); se ele ja estiver aberto SEM a porta, o bot pede pra fechar e voce
+   escolhe **Sair** na janelinha (ele nunca mata o processo a forca); depois reabre e segue.
 2. Ver o estado das contas, sem fazer nada no jogo:
    ```
    python -m huntera_bot --status

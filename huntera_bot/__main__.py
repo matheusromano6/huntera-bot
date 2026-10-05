@@ -53,7 +53,7 @@ def main(argv=None):
     log = make_logger()
     cfg = config.load(args.config)
     pool = Pool(cfg["cdp_url"], log)
-    pool.open()
+    pool.open(launch=not args.status)     # --status so' le: nunca abre o IdleDeck
     try:
         if args.status:
             show_status(pool, log)
