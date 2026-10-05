@@ -128,6 +128,17 @@ class Engine:
             parts.append(f"{st.name}: {st.phase} cap {cap}{stam}{best}")
         self.log("status | " + " | ".join(parts))
 
+    def group_hunt(self, group):
+        """Hunt do time: a que alguma conta mostra no rastreador, senao a lembrada (treino/ultima caçada)."""
+        current = next((s.hunt_name for s in group.states.values() if s.hunt_name), "")
+        if current:
+            return current
+        saved = self.memory.get(group.key)
+        if saved:
+            return saved["hunt"]
+        last = self.last_hunt.get(group.key)
+        return last[0] if last else ""
+
     def _watch_phases(self, states):
         """Avisa quando uma conta sai do treino sem o bot mandar (com os avisos do jogo na tela)."""
         for name, st in states.items():
@@ -204,7 +215,8 @@ class Engine:
         full = self._capacity_trigger(group)
         if full:
             return ("cycle", "capacidade: " + ", ".join(full), current, self.cfg["hunt_tiers"].get(current))
-        if all(s.bestiary_complete for s in states):
+        tracked = [s for s in states if s.bestiary_total]   # quem nao mostra o rastreador nao conta
+        if tracked and all(s.bestiary_complete for s in tracked):
             nxt = self._chain_next(current)
             if nxt:
                 tier = nxt.get("tier") or self.cfg["hunt_tiers"].get(nxt["name"])
@@ -449,6 +461,7 @@ class Engine:
         self.snapshot = {
             "states": states,
             "groups": {m.name: (g.label, g.is_team, g.leader.name if g.leader else "") for g in groups for m in g.members},
+            "hunts": {m.name: self.group_hunt(g) for g in groups for m in g.members},
         }
         self._status(states)
         self._watch_phases(states)

@@ -263,7 +263,7 @@ class App:
             desp = "pronto" if st.dispatch_ready else (st.dispatch_text.replace("PRONTO EM ", "") or "-")
             stam = "-" if st.stamina_min is None else f"{st.stamina_min // 60}:{st.stamina_min % 60:02d}h"
             kind = ("time · líder " + group[2].title()) if group[1] else "solo"
-            self.tree.insert("", "end", values=(name.title(), st.vocation.title(), PHASES.get(st.phase, st.phase), cap, stam, st.hunt_name or "-", best, desp, kind))
+            self.tree.insert("", "end", values=(name.title(), st.vocation.title(), PHASES.get(st.phase, st.phase), cap, stam, st.hunt_name or snap.get("hunts", {}).get(name) or "-", best, desp, kind))
         self.root.after(2000, self._poll_accounts)
 
     # ---------------------------------------------------------------- regras

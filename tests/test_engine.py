@@ -225,6 +225,23 @@ class EngineTests(unittest.TestCase):
         engine.tick()
         self.assertEqual(w.calls, [])
 
+    def test_bestiary_ignores_accounts_without_tracker(self):
+        w = team_world()
+        w.accounts["ALIADO UM"].state.bestiary_done = 1
+        sem = w.accounts["ALIADO DOIS"].state
+        sem.bestiary_done = sem.bestiary_total = None       # rastreador nao aparece nessa conta
+        sem.hunt_name = ""
+        engine, _ = make_engine(w, bestiary_chain={"enabled": True, "hunts": [{"name": "Rat Cellars"}, {"name": "Spider Nest"}]})
+        engine.tick()
+        self.assertEqual(w.calls[-1], ("start", "ALIADO UM", "Spider Nest", None, True))
+
+    def test_snapshot_gives_team_hunt_to_every_member(self):
+        w = team_world()
+        w.accounts["ALIADO DOIS"].state.hunt_name = ""
+        engine, _ = make_engine(w)
+        engine.tick()
+        self.assertEqual(engine.snapshot["hunts"]["ALIADO DOIS"], "Rat Cellars")
+
     def test_bestiary_chain_end_does_nothing(self):
         w = team_world()
         for a in w.accounts.values():
