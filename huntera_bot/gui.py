@@ -259,7 +259,9 @@ class App:
         for name, st in sorted(snap["states"].items()):
             group = snap["groups"].get(name, ("", False, ""))
             cap = "-" if st.cap_pct is None else f"{st.cap_pct:.0f}%"
-            best = f"{st.bestiary_done}/{st.bestiary_total}" if st.bestiary_total else "-"
+            team_best = snap.get("bestiary", {}).get(name)
+            best = (f"{st.bestiary_done}/{st.bestiary_total}" if st.bestiary_total
+                    else f"{team_best} (time)" if team_best and group[1] else "-")
             desp = "pronto" if st.dispatch_ready else (st.dispatch_text.replace("PRONTO EM ", "") or "-")
             stam = "-" if st.stamina_min is None else f"{st.stamina_min // 60}:{st.stamina_min % 60:02d}h"
             kind = ("time · líder " + group[2].title()) if group[1] else "solo"

@@ -242,6 +242,14 @@ class EngineTests(unittest.TestCase):
         engine.tick()
         self.assertEqual(engine.snapshot["hunts"]["ALIADO DOIS"], "Rat Cellars")
 
+    def test_snapshot_gives_team_bestiary_to_every_member(self):
+        w = team_world()
+        sem = w.accounts["ALIADO DOIS"].state
+        sem.bestiary_done = sem.bestiary_total = None
+        engine, _ = make_engine(w)
+        engine.tick()
+        self.assertEqual(engine.snapshot["bestiary"]["ALIADO DOIS"], "0/1")
+
     def test_bestiary_chain_end_does_nothing(self):
         w = team_world()
         for a in w.accounts.values():

@@ -18,7 +18,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - `idledeck.py` (conexao/descoberta), `launcher.py` (abre o IdleDeck com a porta), `updater.py` (botao Atualizar),
   `gui.py` (CustomTkinter + bandeja), `runner.py` (thread do motor), `catalog.py` + `data/hunts.json` (75 caçadas, ordem do jogo),
   `config.py` (padroes), `paths.py` (arquivos ao lado do .exe quando empacotado).
-- `tests/` (79 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
+- `tests/` (80 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
 
 ## O que o bot faz (regras)
 - **Capacidade:** QUALQUER conta do time >= `capacity_pct` -> a lider sai (leva todos, 5s) -> cada conta vende a MOCHILA (marca tudo)
@@ -47,7 +47,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - Bestiary: o cabecalho "N / M" so conta criaturas TOTALMENTE concluidas; ao fechar uma fase a linha reinicia com alvo maior
   (2500 -> 5000) e aparece toast "Fase N do Bestiary concluida". Contagem e por conta (no time, abates contam pra todos).
 - Algumas contas NAO mostram o rastreador do Bestiary (`.bestiary-tracker-hunt-head` ausente): ficam sem hunt_name/bestiary.
-  A hunt do time vem de quem mostra (ou da memoria); a interface usa `snapshot["hunts"]`.
+  A hunt do time vem de quem mostra (ou da memoria); a interface usa `snapshot["hunts"]` e `snapshot["bestiary"]` ("N/M (time)").
 - Pull salvo e por conta; no time vale o da lider. Selecionar uma hunt na lista troca a tela pra detalhe (a lista some).
 - Stamina: `.hud-stamina-clock` ("5:43h"); gasta caçando, recarrega fora. Treino: painel `[aria-label="Treino ativo"]` (a conta continua
   "na cidade"); o botao Cancelar pode ficar coberto pela party.

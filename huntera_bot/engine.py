@@ -77,6 +77,15 @@ def build_groups(accounts, states):
     return groups
 
 
+def group_bestiary(group):
+    """Contador 'N/M' de quem do time mostra o rastreador (o menor, pra nao adiantar) ou ''."""
+    tracked = [s for s in group.states.values() if s.bestiary_total]
+    if not tracked:
+        return ""
+    s = min(tracked, key=lambda x: (x.bestiary_done or 0) / x.bestiary_total)
+    return f"{s.bestiary_done}/{s.bestiary_total}"
+
+
 class Engine:
     def __init__(self, accounts, cfg, log=print, clock=time.monotonic, sleep=time.sleep, refresh=None, memory=None):
         self.accounts = accounts
@@ -462,6 +471,7 @@ class Engine:
             "states": states,
             "groups": {m.name: (g.label, g.is_team, g.leader.name if g.leader else "") for g in groups for m in g.members},
             "hunts": {m.name: self.group_hunt(g) for g in groups for m in g.members},
+            "bestiary": {m.name: group_bestiary(g) for g in groups for m in g.members},
         }
         self._status(states)
         self._watch_phases(states)
