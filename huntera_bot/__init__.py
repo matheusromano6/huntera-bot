@@ -1,3 +1,3 @@
 """Bot do Huntera (huntera.com.br) pra rodar dentro do IdleDeck."""
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"

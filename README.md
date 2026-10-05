@@ -68,3 +68,7 @@ nunca toca em paginas de outros jogos do IdleDeck.
 Baixe `HunteraBot-windows.zip` na pagina de releases, extraia numa pasta e abra `HunteraBot.exe`. O `config.json`,
 o `memory.json` e os `logs` ficam ao lado do .exe. Para gerar o executavel: `build.bat` (precisa de `pip install pyinstaller`).
 Apenas Windows.
+
+**Atualizar:** o botao "Atualizar" (no topo) confere na hora a ultima release no GitHub; se ja esta na ultima so avisa; se
+ha versao nova baixa, fecha e reabre sozinho (config.json, memory.json e logs nao sao tocados). Ao abrir, o bot avisa no log
+se ha versao nova. Funciona so no executavel (a v1.0.0 nao tem o botao: baixe a v1.1.0 manualmente uma vez).

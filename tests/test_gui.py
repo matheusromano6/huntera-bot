@@ -5,12 +5,13 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import customtkinter as ctk
 
-from huntera_bot import gui
+from huntera_bot import gui, updater
 from huntera_bot.account import State
 
 
@@ -131,6 +132,8 @@ class GuiTests(unittest.TestCase):
         rows = [self.app.tree.item(i, "values") for i in self.app.tree.get_children()]
         self.assertEqual(rows[0][:7], ("Aliado Dois", "Elder Druid", "caçando", "58%", "5:43h", "Rat Cellars", "0/1"))
         self.assertIn("time", rows[0][8])
+        self.app.runner.running = False                          # o teste nao deve deixar o bot "rodando"
+        self.app.runner.connected = False
 
     def test_6_training_tab_free_choice_per_character(self):
         from huntera_bot.memory import Memory
@@ -148,6 +151,53 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(self.saved()["training"]["by_name"]["aliado dois"], "Shielding")
         self.app._training_changed("Aliado Um", gui.DEFAULT_CHOICE)            # volta ao padrao
         self.assertNotIn("aliado um", self.saved()["training"]["by_name"])
+
+    def _drain_log(self):
+        """Texto do painel de log (o laco do app passa a fila pro painel)."""
+        pump(self.root, 0.4)
+        return self.app.log_box.get("1.0", "end")
+
+    def test_8_update_up_to_date(self):
+        with mock.patch.object(updater, "check_for_update", lambda log=print, **k: None):
+            self.app.start_update()
+            pump(self.root, 1.0)
+        self.assertIn("última versão", self._drain_log())
+        self.assertEqual(self.app.update_btn.cget("text"), "Atualizar")
+        self.assertFalse(self.app.updating)
+
+    def test_9_update_in_dev_mode_does_not_replace_anything(self):
+        with mock.patch.object(updater, "check_for_update", lambda log=print, **k: {"version": "9.9.9", "asset_url": "x"}),                 mock.patch.object(updater, "is_frozen", lambda: False):
+            self.app.start_update()
+            pump(self.root, 1.0)
+        self.assertIn("só funciona no executável", self._drain_log())
+        self.assertIsNone(self.app.update_overlay)
+
+    def test_10_update_flow_overlay_and_restart(self):
+        calls = []
+        with mock.patch.object(updater, "check_for_update", lambda log=print, **k: {"version": "9.9.9", "asset_url": "x"}),                 mock.patch.object(updater, "is_frozen", lambda: True),                 mock.patch.object(updater, "apply_update", lambda url, log, progress=None, **k: (progress(0.5), True)[1]),                 mock.patch.object(self.app, "quit", lambda: calls.append("quit")):
+            self.app.start_update(confirm=False)
+            pump(self.root, 0.8)
+            self.assertTrue(self.app.updating)
+            self.assertIsNotNone(self.app.update_overlay)                   # tela de carregamento cobrindo tudo
+            pump(self.root, 2.5)
+        self.assertEqual(calls, ["quit"])                                     # fecha pro .bat trocar o exe
+        self.app.update_overlay.destroy()
+        self.app.update_overlay = None
+        self.app.updating = False
+
+    def test_11_update_failure_restores_the_window(self):
+        with mock.patch.object(updater, "check_for_update", lambda log=print, **k: {"version": "9.9.9", "asset_url": "x"}),                 mock.patch.object(updater, "is_frozen", lambda: True),                 mock.patch.object(updater, "apply_update", lambda url, log, progress=None, **k: False):
+            self.app.start_update(confirm=False)
+            pump(self.root, 1.5)
+        self.assertFalse(self.app.updating)
+        self.assertIsNone(self.app.update_overlay)
+        self.assertIn("Não consegui aplicar", self._drain_log())
+
+    def test_12_update_blocked_while_bot_runs(self):
+        self.app.runner.running = True
+        self.app.start_update()
+        self.assertIn("Pare o bot", self._drain_log())
+        self.app.runner.running = False
 
     def test_7_close_dialog_and_tray(self):
         self.app.request_close()

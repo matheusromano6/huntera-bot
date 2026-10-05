@@ -5,12 +5,13 @@ import importlib
 import os
 import queue
 import sys
+import threading
 import tkinter as tk
 from tkinter import ttk
 
 import customtkinter as ctk
 
-from . import VERSION, catalog, config
+from . import VERSION, catalog, config, updater
 from .memory import Memory
 from .paths import app_dir, resource_dir
 from .runner import Runner
@@ -45,6 +46,9 @@ class App:
         self.tray_icon = None
         self.tray_queue = queue.Queue()
         self.close_dialog = None
+        self.updating = False
+        self.update_overlay = None
+        self.ui_queue = queue.Queue()         # threads de fundo pedem coisas da interface por aqui
 
         self._build_header()
         self.tabs = ctk.CTkTabview(root, fg_color=PANEL, segmented_button_selected_color=ACCENT,
@@ -62,6 +66,8 @@ class App:
         if sys.platform == "win32":
             root.bind("<Unmap>", self._on_unmap)
         root.after(100, self._poll_log)
+        root.after(100, self._poll_ui)
+        root.after(3000, self._startup_update_check)
         root.after(2000, self._poll_accounts)
         root.after(300, self._poll_tray)
 
@@ -100,6 +106,9 @@ class App:
         self.start_btn = ctk.CTkButton(bar, text="Iniciar", width=90, command=self.start, fg_color=ACCENT,
                                        hover_color=ACCENT_HOVER, text_color="#04140a")
         self.start_btn.pack(side="right", padx=4)
+        self.update_btn = ctk.CTkButton(bar, text="Atualizar", width=90, command=self.start_update, fg_color=PANEL_ALT,
+                                        hover_color=BORDER, text_color=TEXT)
+        self.update_btn.pack(side="right", padx=14)
 
     def start(self):
         self.runner.start()
@@ -111,6 +120,110 @@ class App:
         self.stop_btn.configure(state="disabled")
         self.start_btn.configure(state="normal")
         self.status.configure(text="● PARADO", text_color=MUTED)
+
+    def call_ui(self, fn):
+        """Executa 'fn' na thread da interface (o Tk nao aceita after() de outra thread fora do mainloop)."""
+        self.ui_queue.put(fn)
+
+    def _poll_ui(self):
+        try:
+            while True:
+                self.ui_queue.get_nowait()()
+        except queue.Empty:
+            pass
+        self.root.after(100, self._poll_ui)
+
+    # ------------------------------------------------------------- atualizar
+    def _startup_update_check(self):
+        """Ao abrir: avisa no log se ha versao nova (nao baixa nem troca nada sozinho)."""
+        def work():
+            info = updater.check_for_update(lambda m: None)
+            if info:
+                self.log(f"Nova versão disponível: v{info['version']} (você está na v{VERSION}). Clique em Atualizar.")
+        threading.Thread(target=work, daemon=True).start()
+
+    def start_update(self, confirm=True):
+        """Atualizar: confere AGORA (no GitHub) se ha versao nova; se ja esta na ultima, so' avisa."""
+        if self.updating:
+            return
+        if self.runner.running:
+            self.log("Pare o bot antes de atualizar.")
+            return
+        self.update_btn.configure(state="disabled", text="Verificando...")
+
+        def work():
+            info = updater.check_for_update(self.log)
+            self.call_ui(lambda: self._on_update_checked(info, confirm))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_update_checked(self, info, confirm):
+        self.update_btn.configure(state="normal", text="Atualizar")
+        if info is None:
+            self.log(f"Você já está na última versão (v{VERSION}).")
+            return
+        if not updater.is_frozen():
+            self.log(f"Há uma versão nova (v{info['version']}), mas a atualização automática só funciona no executável (HunteraBot.exe).")
+            return
+        if confirm and not self._ask(f"Atualizar para a v{info['version']}?",
+                                     "O bot vai baixar a versão nova, fechar e abrir sozinho de novo. "
+                                     "Suas configurações (config.json, memory.json) ficam como estão."):
+            return
+        self._begin_update(info)
+
+    def _ask(self, title, message):
+        win = ctk.CTkToplevel(self.root)
+        win.title(title)
+        win.geometry("430x190")
+        win.configure(fg_color=BG)
+        win.transient(self.root)
+        win.attributes("-topmost", True)
+        result = {"ok": False}
+        ctk.CTkLabel(win, text=message, wraplength=390, text_color=TEXT).pack(padx=20, pady=(22, 16))
+        row = ctk.CTkFrame(win, fg_color="transparent")
+        row.pack()
+
+        def answer(value):
+            result["ok"] = value
+            win.destroy()
+
+        ctk.CTkButton(row, text="Atualizar", command=lambda: answer(True), fg_color=ACCENT, hover_color=ACCENT_HOVER, text_color="#04140a").pack(side="left", padx=8)
+        ctk.CTkButton(row, text="Cancelar", command=lambda: answer(False), fg_color=PANEL_ALT, hover_color=BORDER, text_color=TEXT).pack(side="left", padx=8)
+        win.protocol("WM_DELETE_WINDOW", lambda: answer(False))
+        win.grab_set()
+        self.root.wait_window(win)
+        return result["ok"]
+
+    def _begin_update(self, info):
+        """Tela de carregamento cobrindo a janela inteira (nao deixa clicar em nada ate' trocar)."""
+        self.updating = True
+        overlay = ctk.CTkFrame(self.root, fg_color=BG)
+        overlay.place(x=0, y=0, relwidth=1, relheight=1)
+        overlay.lift()
+        ctk.CTkLabel(overlay, text=f"Atualizando para a v{info['version']}...", font=("Segoe UI", 18, "bold"), text_color=TEXT).place(relx=0.5, rely=0.42, anchor="center")
+        self.update_status = ctk.CTkLabel(overlay, text="Baixando...", text_color=MUTED)
+        self.update_status.place(relx=0.5, rely=0.5, anchor="center")
+        self.update_bar = ctk.CTkProgressBar(overlay, width=360, progress_color=ACCENT)
+        self.update_bar.set(0)
+        self.update_bar.place(relx=0.5, rely=0.57, anchor="center")
+        self.update_overlay = overlay
+
+        def work():
+            ok = updater.apply_update(info["asset_url"], self.log, lambda f: self.call_ui(lambda: self.update_bar.set(f)))
+            self.call_ui(lambda: self._on_update_applied(ok))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_update_applied(self, ok):
+        if not ok:
+            self.update_overlay.destroy()
+            self.update_overlay = None
+            self.updating = False
+            self.log("Não consegui aplicar a atualização - tente de novo mais tarde ou baixe na página de releases.")
+            return
+        self.update_bar.set(1)
+        self.update_status.configure(text="Instalando... reiniciando o bot.")
+        self.root.after(1500, self.quit)       # o .bat so' troca o .exe depois que ESTE processo fechar
 
     # ---------------------------------------------------------------- contas
     def _build_accounts(self, tab):
@@ -382,6 +495,8 @@ class App:
 
     # ------------------------------------------------------- fechar / bandeja
     def request_close(self):
+        if self.updating:
+            return
         if sys.platform != "win32":
             self.quit()
             return
