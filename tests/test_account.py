@@ -12,25 +12,47 @@ class FakeRow:
     def __init__(self, page, i):
         self.page, self.i = page, i
 
+    @property
+    def first(self):
+        return self
+
     def click(self, timeout=0):
         row = self.page.rows[self.i]
         row["marked"] = not row["marked"]
 
+    dispatch_event = lambda self, name: self.click()
+
 
 class FakeLocator:
-    def __init__(self, page):
-        self.page = page
+    """Locator de seletor: clicar delega pro page.click; dispatch_event e' o clique direto (sem checar cobertura)."""
+
+    def __init__(self, page, selector):
+        self.page, self.selector = page, selector
+
+    @property
+    def first(self):
+        return self
 
     def nth(self, i):
         return FakeRow(self.page, i)
 
+    def click(self, timeout=0):
+        self.page.click(self.selector, timeout)
+
+    def dispatch_event(self, name):
+        self.page.dispatched.append(self.selector)
+        self.page.effect(self.selector)
+
 
 class FakePage:
-    """Janela de venda falsa: botao habilitavel, linhas marcaveis, confirmar/cancelar."""
+    """Janela de venda falsa: botao habilitavel, linhas marcaveis, confirmar/cancelar, botoes 'cobertos'."""
 
-    def __init__(self, rows, button_enabled=True):
+    def __init__(self, rows, button_enabled=True, covered=(), broken=None):
         self.rows = rows
         self.button_enabled = button_enabled
+        self.covered = set(covered)          # seletores que a janela da party cobre ('intercepts pointer events')
+        self.broken = broken or {}           # seletor -> mensagem de erro (ex: invisivel)
+        self.dispatched = []
         self.window = False
         self.sold = None
         self.cancelled = False
@@ -48,9 +70,16 @@ class FakePage:
         raise AssertionError("js inesperado: " + js[:60])
 
     def locator(self, selector):
-        return FakeLocator(self)
+        return FakeLocator(self, selector)
 
     def click(self, selector, timeout=0):
+        if selector in self.broken:
+            raise RuntimeError(self.broken[selector])
+        if selector in self.covered:
+            raise RuntimeError("<span>Party</span> from <section class=party-window> subtree intercepts pointer events")
+        self.effect(selector)
+
+    def effect(self, selector):
         if selector in (S.QUICK_SELL_BTN, S.DISPATCH_BTN):
             self.window = True
         elif selector == S.QS_CONFIRM:
@@ -93,6 +122,19 @@ class SellTests(unittest.TestCase):
         self.assertEqual(self.acc(page).sell_all(mark_all=False), 0)
         self.assertTrue(page.cancelled)
         self.assertIsNone(page.sold)
+
+    def test_covered_button_is_clicked_directly(self):
+        """A janela da party por cima do botao (visto ao vivo) nao pode impedir a venda."""
+        page = FakePage(rows(("cheese", True)), covered={S.DISPATCH_BTN, S.QS_CONFIRM})
+        self.assertEqual(self.acc(page).dispatch_loot(), 1)
+        self.assertEqual(page.sold, ["cheese"])
+        self.assertEqual(sorted(page.dispatched), sorted([S.DISPATCH_BTN, S.QS_CONFIRM]))
+
+    def test_other_click_errors_are_not_swallowed(self):
+        page = FakePage(rows(("cheese", True)), broken={S.QS_CONFIRM: "element is not visible"})
+        with self.assertRaises(RuntimeError):
+            self.acc(page).sell_all()
+        self.assertEqual(page.dispatched, [])                 # sem 'intercepts': nao forca o clique
 
     def test_dispatch_uses_the_same_flow(self):
         page = FakePage(rows(("cheese", False)))

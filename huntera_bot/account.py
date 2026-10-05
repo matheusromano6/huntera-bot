@@ -126,6 +126,20 @@ class Account:
         self.name = st.name or self.name
         return st
 
+
+    def _click(self, target, timeout=3000):
+        """Clique robusto. CONFIRMADO ao vivo: janelas do HUD (party, 'Ratear custos da hunt') ficam POR CIMA
+        de botoes (Sair da caçada, Cancelar treino) e o Playwright recusa o clique ('intercepts pointer
+        events'). Nesse caso (e SO' nele) dispara o 'click' direto no botao; qualquer outro erro
+        (invisivel, desabilitado, nao achou) continua sendo erro. 'target' = seletor ou locator."""
+        locator = self.page.locator(target) if isinstance(target, str) else target
+        try:
+            locator.first.click(timeout=timeout)
+        except Exception as error:
+            if "intercepts pointer events" not in str(error):
+                raise
+            locator.first.dispatch_event("click")
+
     def _visible(self, selector):
         return self.page.evaluate(
             "(s) => { const e = document.querySelector(s); return !!e && e.getBoundingClientRect().width > 0 }", selector)
@@ -143,7 +157,7 @@ class Account:
         for window, closer in ((S.QS_WINDOW, S.QS_CANCEL), (S.HUNT_WINDOW, S.HUNT_CLOSE)):
             try:
                 if self._visible(window):
-                    self.page.click(closer, timeout=3000)
+                    self._click(closer, 3000)
                     time.sleep(0.5)
             except Exception:
                 pass
@@ -155,7 +169,7 @@ class Account:
         if st.phase == "city":
             return True
         if st.phase == "hunting":
-            self.page.click(S.LEAVE_BTN, timeout=3000)
+            self._click(S.LEAVE_BTN, 3000)
         return self._wait(lambda: self.read().phase == "city", timeout, 0.7)
 
     def _open_quick_sell(self, via):
@@ -166,7 +180,7 @@ class Account:
             "(s) => { const e = document.querySelector(s); return !!e && !e.disabled }", via)
         if not enabled:
             raise NothingToSell()
-        self.page.click(via, timeout=3000)
+        self._click(via, 3000)
         if not self._wait(lambda: self._visible(S.QS_WINDOW), 6):
             raise GameError("janela de venda nao abriu")
 
@@ -183,21 +197,21 @@ class Account:
             name = row["name"].lower()
             if name in keep:
                 if row["marked"]:  # item protegido que estava marcado: desmarca
-                    self.page.locator(S.QS_ROW).nth(row["i"]).click(timeout=3000)
+                    self._click(self.page.locator(S.QS_ROW).nth(row["i"]))
                 continue
             if mark_all and not row["marked"]:
-                self.page.locator(S.QS_ROW).nth(row["i"]).click(timeout=3000)
+                self._click(self.page.locator(S.QS_ROW).nth(row["i"]))
         time.sleep(0.4)
         state = self.page.evaluate(
             """(S) => { const c = document.querySelector(S.QS_CONFIRM);
                 return {marked: document.querySelectorAll(S.QS_ROW + '.marked').length, text: c ? c.innerText.trim() : '', disabled: c ? !!c.disabled : true}; }""", _SEL)
         if state["marked"] == 0 or state["disabled"]:
-            self.page.click(S.QS_CANCEL, timeout=3000)
+            self._click(S.QS_CANCEL, 3000)
             self._wait(lambda: not self._visible(S.QS_WINDOW), 4)
             return 0, "", []
         sold = [f"{r['name']} ({r['detail']})" for r in rows
                 if r["name"].lower() not in keep and (r["marked"] or mark_all)]
-        self.page.click(S.QS_CONFIRM, timeout=3000)
+        self._click(S.QS_CONFIRM, 3000)
         if not self._wait(lambda: not self._visible(S.QS_WINDOW), 6):
             raise GameError("a janela de venda nao fechou apos confirmar")
         return state["marked"], state["text"], sold
@@ -232,17 +246,17 @@ class Account:
 
     def open_hunt_entry(self, hunt, tier=None):
         """Caçar > Organizar caçada > escolhe a hunt (e o pull, se pedido). Deixa a janela aberta."""
-        self.page.click(S.START_NAV, timeout=3000)
+        self._click(S.START_NAV, 3000)
         if not self._wait(lambda: self._visible(S.ORGANIZE) or self._visible(S.HUNT_WINDOW), 5):
             raise GameError("janela de caçada nao abriu")
         time.sleep(0.6)
         if self._visible(S.ORGANIZE):
-            self.page.click(S.ORGANIZE, timeout=3000)
+            self._click(S.ORGANIZE, 3000)
         entry = self.page.locator(S.HUNT_ENTRY.format(name=hunt))
         if not self._wait(lambda: entry.count() > 0, 6):
             raise GameError(f"hunt '{hunt}' nao encontrada na lista")
         entry.scroll_into_view_if_needed(timeout=3000)
-        entry.click(timeout=3000)
+        self._click(entry)
         time.sleep(0.8)
         if tier:
             tiers = self.page.locator(S.HUNT_TIER).filter(has_text=tier)
@@ -250,7 +264,7 @@ class Account:
                 raise GameError(f"pull '{tier}' nao existe em '{hunt}'")
             selected = "selected" in (tiers.first.get_attribute("class") or "")
             if not selected:
-                tiers.first.click(timeout=3000)
+                self._click(tiers.first)
                 time.sleep(0.5)
 
     def start_hunt(self, hunt, tier=None, team=False):
@@ -262,7 +276,7 @@ class Account:
                 "(s) => { const e = document.querySelector(s); return !!e && e.getBoundingClientRect().width > 0 && !e.disabled }", button)
             if not ok:
                 raise GameError("botao de iniciar indisponivel (" + ("time" if team else "solo") + ")")
-            self.page.click(button, timeout=3000)
+            self._click(button, 3000)
             time.sleep(0.8)
         except Exception:
             self.close_windows()
@@ -272,23 +286,23 @@ class Account:
         """Caçar > Treino > habilidade > 'Treino online' > Iniciar treino. A conta TEM que estar na cidade
         (o botao fica desabilitado em caçada)."""
         try:
-            self.page.click(S.START_NAV, timeout=3000)
+            self._click(S.START_NAV, 3000)
             if not self._wait(lambda: self._visible(S.HUNT_WINDOW), 6):
                 raise GameError("janela de caçada nao abriu")
             time.sleep(0.6)
-            self.page.locator(S.HUNT_TAB).filter(has_text="Treino").first.click(timeout=3000)
+            self._click(self.page.locator(S.HUNT_TAB).filter(has_text="Treino").first)
             time.sleep(0.9)
             button = self.page.locator(S.TRAIN_SKILL).filter(has_text=skill)
             if button.count() == 0:
                 raise GameError(f"habilidade '{skill}' nao encontrada")
             if "active" not in (button.first.get_attribute("class") or ""):
-                button.first.click(timeout=3000)
+                self._click(button.first)
                 time.sleep(0.6)
             start = self.page.locator(S.TRAIN_MODE).filter(has_text="Treino online").locator(S.TRAIN_START)
             if start.count() == 0 or not start.first.is_enabled():
                 reason = (start.first.get_attribute("title") if start.count() else "") or "botao indisponivel"
                 raise GameError(f"treino online indisponivel: {reason}")
-            start.first.click(timeout=3000)
+            self._click(start.first)
             time.sleep(1.2)
             self.log(f"[{self.name}] treino iniciado: {skill}")
         except Exception:
@@ -300,11 +314,11 @@ class Account:
     def read_training_options(self):
         """Habilidades que o jogo oferece a esta conta (Caçar > Treino), so' lendo. None se nao deu."""
         try:
-            self.page.click(S.START_NAV, timeout=3000)
+            self._click(S.START_NAV, 3000)
             if not self._wait(lambda: self._visible(S.HUNT_WINDOW), 6):
                 return None
             time.sleep(0.5)
-            self.page.locator(S.HUNT_TAB).filter(has_text="Treino").first.click(timeout=3000)
+            self._click(self.page.locator(S.HUNT_TAB).filter(has_text="Treino").first)
             time.sleep(0.9)
             skills = self.page.evaluate(
                 """(S) => Array.from(document.querySelectorAll(S.TRAIN_SKILL)).filter(e => !e.disabled)
@@ -319,12 +333,7 @@ class Account:
         """Clica em 'Cancelar' no painel 'Treino ativo' (a conta fica na cidade)."""
         if not self._visible(S.TRAINING):
             return True
-        try:
-            self.page.click(S.TRAINING_CANCEL, timeout=2500)
-        except Exception:
-            # CONFIRMADO ao vivo: a janela da party pode ficar POR CIMA do painel de treino e
-            # interceptar o clique real; o botao so' escuta 'click' - dispara direto nele.
-            self.page.locator(S.TRAINING_CANCEL).first.dispatch_event("click")
+        self._click(S.TRAINING_CANCEL, 2500)
         ok = self._wait(lambda: not self._visible(S.TRAINING), timeout)
         if ok:
             self.log(f"[{self.name}] treino cancelado")
