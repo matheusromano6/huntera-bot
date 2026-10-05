@@ -1,0 +1,708 @@
+{
+ "source": "huntera.com.br catalogo de caçadas (ordem do jogo = progressao)",
+ "hunts": [
+  {
+   "order": 1,
+   "id": "rat-hunt",
+   "name": "Rat Cellars",
+   "creatures": [
+    "Rat"
+   ]
+  },
+  {
+   "order": 2,
+   "id": "spider-hunt",
+   "name": "Spider Nest",
+   "creatures": [
+    "Spider"
+   ]
+  },
+  {
+   "order": 3,
+   "id": "troll-hunt",
+   "name": "Troll Hills",
+   "creatures": [
+    "Troll"
+   ]
+  },
+  {
+   "order": 4,
+   "id": "swamp-troll-hunt",
+   "name": "Swamp Troll Cave",
+   "creatures": [
+    "Swamp Troll"
+   ]
+  },
+  {
+   "order": 5,
+   "id": "orc-hunt",
+   "name": "Orc Camp",
+   "creatures": [
+    "Orc"
+   ]
+  },
+  {
+   "order": 6,
+   "id": "folda-hunt",
+   "name": "Folda Icefields",
+   "creatures": [
+    "Frost Troll",
+    "Winter Wolf",
+    "Polar Bear"
+   ]
+  },
+  {
+   "order": 7,
+   "id": "skeleton-hunt",
+   "name": "Bone Crypt",
+   "creatures": [
+    "Skeleton"
+   ]
+  },
+  {
+   "order": 8,
+   "id": "rotworm-hunt",
+   "name": "Rotworm Caves",
+   "creatures": [
+    "Rotworm"
+   ]
+  },
+  {
+   "order": 9,
+   "id": "dwarf-hunt",
+   "name": "Dwarf Mines",
+   "creatures": [
+    "Dwarf"
+   ]
+  },
+  {
+   "order": 10,
+   "id": "minotaur-hunt",
+   "name": "Minotaur Maze",
+   "creatures": [
+    "Minotaur"
+   ]
+  },
+  {
+   "order": 11,
+   "id": "gloom-ghost-wolf-hunt",
+   "name": "Gloomy Poacher Caves",
+   "creatures": [
+    "Gloom Wolf",
+    "Ghost Wolf"
+   ]
+  },
+  {
+   "order": 12,
+   "id": "amazon-hunt",
+   "name": "Amazon Camp",
+   "creatures": [
+    "Amazon",
+    "Valkyrie"
+   ]
+  },
+  {
+   "order": 13,
+   "id": "dark-cathedral-hunt",
+   "name": "Dark Cathedral",
+   "creatures": [
+    "Smuggler",
+    "Wild Warrior",
+    "Bandit",
+    "Assassin",
+    "Dark Monk"
+   ]
+  },
+  {
+   "order": 14,
+   "id": "ghoul-hunt",
+   "name": "Ghoul Graveyard",
+   "creatures": [
+    "Ghoul"
+   ]
+  },
+  {
+   "order": 15,
+   "id": "rorc-hunt",
+   "name": "Rorc Camp",
+   "creatures": [
+    "Rorc",
+    "Wolf"
+   ]
+  },
+  {
+   "order": 16,
+   "id": "yalahar-elf-hunt",
+   "name": "Yalahar Elf Quarter",
+   "creatures": [
+    "Elf",
+    "Elf Scout",
+    "Elf Arcanist"
+   ]
+  },
+  {
+   "order": 17,
+   "id": "tarantula-hunt",
+   "name": "Tarantula Burrows",
+   "creatures": [
+    "Tarantula"
+   ]
+  },
+  {
+   "order": 18,
+   "id": "scarab-hunt",
+   "name": "Scarab Tombs",
+   "creatures": [
+    "Scarab"
+   ]
+  },
+  {
+   "order": 19,
+   "id": "swampling-hunt",
+   "name": "Venore Swamp",
+   "creatures": [
+    "Bug",
+    "Swampling",
+    "Leaf Golem",
+    "Wilting Leaf Golem",
+    "Haunted Treeling"
+   ]
+  },
+  {
+   "order": 20,
+   "id": "tortoise-hunt",
+   "name": "Tortoise Shore",
+   "creatures": [
+    "Tortoise",
+    "Thornback Tortoise",
+    "Blood Crab"
+   ]
+  },
+  {
+   "order": 21,
+   "id": "mutated-human-hunt",
+   "name": "Plagued Quarter",
+   "creatures": [
+    "Mutated Human"
+   ]
+  },
+  {
+   "order": 22,
+   "id": "cyclops-hunt",
+   "name": "Cyclop Hills",
+   "creatures": [
+    "Cyclops"
+   ]
+  },
+  {
+   "order": 23,
+   "id": "mummy-hunt",
+   "name": "Burial Chambers",
+   "creatures": [
+    "Mummy"
+   ]
+  },
+  {
+   "order": 24,
+   "id": "bonelord-hunt",
+   "name": "Hell Gate",
+   "creatures": [
+    "Bonelord"
+   ]
+  },
+  {
+   "order": 25,
+   "id": "orc-fortress-hunt",
+   "name": "Orc Fortress",
+   "creatures": [
+    "Orc",
+    "Orc Spearman",
+    "Orc Warrior",
+    "Orc Shaman",
+    "Orc Rider",
+    "Orc Berserker",
+    "Orc Leader",
+    "Orc Warlord"
+   ]
+  },
+  {
+   "order": 26,
+   "id": "green-djinn-hunt",
+   "name": "Yalahar Green Djinn Fortress",
+   "creatures": [
+    "Green Djinn"
+   ]
+  },
+  {
+   "order": 27,
+   "id": "blue-djinn-hunt",
+   "name": "Yalahar Blue Djinn Fortress",
+   "creatures": [
+    "Blue Djinn"
+   ]
+  },
+  {
+   "order": 28,
+   "id": "carlin-corym-hunt",
+   "name": "Carlin Corym Cave",
+   "creatures": [
+    "Corym Charlatan",
+    "Corym Skirmisher",
+    "Corym Vanguard"
+   ]
+  },
+  {
+   "order": 29,
+   "id": "cult-hunt",
+   "name": "Magician Cults",
+   "creatures": [
+    "Novice of the Cult",
+    "Acolyte of the Cult",
+    "Adept of the Cult",
+    "Enlightened of the Cult"
+   ]
+  },
+  {
+   "order": 30,
+   "id": "elder-forest-hunt",
+   "name": "Elder Forest",
+   "creatures": [
+    "Leaf Golem",
+    "Wilting Leaf Golem",
+    "Haunted Treeling",
+    "Forest Fury",
+    "Emerald Damselfly",
+    "Marsh Stalker",
+    "Elder Forest Fury"
+   ]
+  },
+  {
+   "order": 31,
+   "id": "drefia-hunt",
+   "name": "Drefia",
+   "creatures": [
+    "Demon Skeleton",
+    "Ghoul",
+    "Skeleton",
+    "Skeleton Warrior",
+    "Necromancer",
+    "Priestess",
+    "Blood Priest"
+   ]
+  },
+  {
+   "order": 32,
+   "id": "ab-bonelord-hunt",
+   "name": "Braindeath Caves",
+   "creatures": [
+    "Bonelord",
+    "Elder Bonelord",
+    "Braindeath"
+   ]
+  },
+  {
+   "order": 33,
+   "id": "ice-golem-hunt",
+   "name": "Frost Mines",
+   "creatures": [
+    "Ice Golem"
+   ]
+  },
+  {
+   "order": 34,
+   "id": "lizard-steppe-hunt",
+   "name": "Lizard Steppe",
+   "creatures": [
+    "Lizard Sentinel",
+    "Lizard Templar",
+    "Lizard Snakecharmer",
+    "Killer Caiman",
+    "Lizard Zaogun"
+   ]
+  },
+  {
+   "order": 35,
+   "id": "brimstone-cave-hunt",
+   "name": "Brimstone Cave",
+   "creatures": [
+    "Brimstone Bug",
+    "Lancer Beetle",
+    "Wailing Widow"
+   ]
+  },
+  {
+   "order": 36,
+   "id": "dragon-hunt",
+   "name": "Dragon Lair",
+   "creatures": [
+    "Dragon"
+   ]
+  },
+  {
+   "order": 37,
+   "id": "vampire-hunt",
+   "name": "Vampire Crypt",
+   "creatures": [
+    "Vampire",
+    "Vampire Viscount",
+    "Vampire Bride"
+   ]
+  },
+  {
+   "order": 38,
+   "id": "mutated-cave-hunt",
+   "name": "Mutated Cave",
+   "creatures": [
+    "Mutated Bat",
+    "Mutated Tiger"
+   ]
+  },
+  {
+   "order": 39,
+   "id": "bog-raider-hunt",
+   "name": "Yalahar Bog",
+   "creatures": [
+    "Bog Raider"
+   ]
+  },
+  {
+   "order": 40,
+   "id": "giant-spider-hunt",
+   "name": "Giant Spider Cavern",
+   "creatures": [
+    "Giant Spider"
+   ]
+  },
+  {
+   "order": 41,
+   "id": "deeplings-hunt",
+   "name": "The Deep",
+   "creatures": [
+    "Shark",
+    "Deepling Scout",
+    "Deepling Guard",
+    "Deepling Spellsinger",
+    "Deepling Warrior"
+   ]
+  },
+  {
+   "order": 42,
+   "id": "hero-hunt",
+   "name": "Hero Fortress",
+   "creatures": [
+    "Hero"
+   ]
+  },
+  {
+   "order": 43,
+   "id": "wyrm-hunt",
+   "name": "Wyrm Caverns",
+   "creatures": [
+    "Wyrm"
+   ]
+  },
+  {
+   "order": 44,
+   "id": "zao-stronghold-hunt",
+   "name": "Zao Stronghold",
+   "creatures": [
+    "Lizard Legionnaire",
+    "Lizard Dragon Priest",
+    "Lizard High Guard"
+   ]
+  },
+  {
+   "order": 45,
+   "id": "grimvale-warrens-hunt",
+   "name": "Grimvale Warrens",
+   "creatures": [
+    "Werebadger"
+   ]
+  },
+  {
+   "order": 46,
+   "id": "rathleton-minotaurs-hunt",
+   "name": "Rathleton Minotaur Camp",
+   "creatures": [
+    "Mooh'Tah Warrior",
+    "Worm Priestess",
+    "Minotaur Hunter",
+    "Minotaur Amazon",
+    "Execowtioner",
+    "Moohtant"
+   ]
+  },
+  {
+   "order": 47,
+   "id": "grimvale-dens-hunt",
+   "name": "Grimvale Dens",
+   "creatures": [
+    "Wereboar",
+    "Werebear"
+   ]
+  },
+  {
+   "order": 48,
+   "id": "dragon-lord-hunt",
+   "name": "Dragon Lord Peak",
+   "creatures": [
+    "Dragon Lord"
+   ]
+  },
+  {
+   "order": 49,
+   "id": "war-golem-hunt",
+   "name": "Factory Quarter",
+   "creatures": [
+    "War Golem"
+   ]
+  },
+  {
+   "order": 50,
+   "id": "lizard-chosen-hunt",
+   "name": "Corrupted Terraces",
+   "creatures": [
+    "Lizard Chosen"
+   ]
+  },
+  {
+   "order": 51,
+   "id": "werehyaena-hunt",
+   "name": "Hyaena Lairs",
+   "creatures": [
+    "Werehyaena",
+    "Werehyaena Shaman"
+   ]
+  },
+  {
+   "order": 52,
+   "id": "werelion-hunt",
+   "name": "Lion Sanctum",
+   "creatures": [
+    "Werelion",
+    "Werelioness",
+    "White Lion"
+   ]
+  },
+  {
+   "order": 53,
+   "id": "behemoth-hunt",
+   "name": "Behemoth Quarry",
+   "creatures": [
+    "Behemoth"
+   ]
+  },
+  {
+   "order": 54,
+   "id": "hellspawn-hunt",
+   "name": "Magician Quarter",
+   "creatures": [
+    "Hellspawn"
+   ]
+  },
+  {
+   "order": 55,
+   "id": "hydra-hunt",
+   "name": "Banuta Ruins",
+   "creatures": [
+    "Hydra",
+    "Eternal Guardian",
+    "Medusa"
+   ]
+  },
+  {
+   "order": 56,
+   "id": "seacrest-serpent-hunt",
+   "name": "Seacrest Caves",
+   "creatures": [
+    "Seacrest Serpent"
+   ]
+  },
+  {
+   "order": 57,
+   "id": "draken-walls-hunt",
+   "name": "Draken Walls",
+   "creatures": [
+    "Draken Warmaster",
+    "Draken Spellweaver"
+   ]
+  },
+  {
+   "order": 58,
+   "id": "ripper-spectre-hunt",
+   "name": "Haunted Cellar",
+   "creatures": [
+    "Ripper Spectre"
+   ]
+  },
+  {
+   "order": 59,
+   "id": "goroma-serpent-spawn-hunt",
+   "name": "Goroma Serpent Caves",
+   "creatures": [
+    "Serpent Spawn",
+    "Medusa"
+   ]
+  },
+  {
+   "order": 60,
+   "id": "asura-hunt",
+   "name": "Asura Palace",
+   "creatures": [
+    "Dawnfire Asura",
+    "Midnight Asura",
+    "Hellspawn",
+    "Frost Flower Asura"
+   ]
+  },
+  {
+   "order": 61,
+   "id": "gazer-spectre-hunt",
+   "name": "Haunted Temple",
+   "creatures": [
+    "Gazer Spectre"
+   ]
+  },
+  {
+   "order": 62,
+   "id": "roshamuul-lower-hunt",
+   "name": "Lower Roshamuul",
+   "creatures": [
+    "Frazzlemaw",
+    "Silencer"
+   ]
+  },
+  {
+   "order": 63,
+   "id": "burster-spectre-hunt",
+   "name": "Haunted Tomb",
+   "creatures": [
+    "Burster Spectre"
+   ]
+  },
+  {
+   "order": 64,
+   "id": "grim-reaper-hunt",
+   "name": "Halls of the Reaper",
+   "creatures": [
+    "Grim Reaper"
+   ]
+  },
+  {
+   "order": 65,
+   "id": "demon-hunt",
+   "name": "Infernal Gate",
+   "creatures": [
+    "Demon"
+   ]
+  },
+  {
+   "order": 66,
+   "id": "falcon-hunt",
+   "name": "Falcon's Eye",
+   "creatures": [
+    "Falcon Knight",
+    "Falcon Paladin"
+   ]
+  },
+  {
+   "order": 67,
+   "id": "falcon-bastion-hunt",
+   "name": "Falcon Bastion",
+   "creatures": [
+    "Falcon Knight",
+    "Falcon Paladin"
+   ]
+  },
+  {
+   "order": 68,
+   "id": "cobra-bastion-hunt",
+   "name": "Cobra Bastion",
+   "creatures": [
+    "Cobra Assassin",
+    "Cobra Scout",
+    "Cobra Vizier"
+   ]
+  },
+  {
+   "order": 69,
+   "id": "hell-hub-hunt",
+   "name": "Hell Hub",
+   "creatures": [
+    "Demon",
+    "Vexclaw",
+    "Grimeleech",
+    "Hellflayer"
+   ]
+  },
+  {
+   "order": 70,
+   "id": "marapur-naga-hunt",
+   "name": "Marapur Naga",
+   "creatures": [
+    "Naga Archer",
+    "Naga Warrior",
+    "Makara"
+   ]
+  },
+  {
+   "order": 71,
+   "id": "catacombs-hunt",
+   "name": "Catacombs",
+   "creatures": [
+    "Hellspawn",
+    "Grim Reaper",
+    "Demon",
+    "Destroyer",
+    "Dark Torturer",
+    "Juggernaut"
+   ]
+  },
+  {
+   "order": 72,
+   "id": "issavi-hunt",
+   "name": "Kilmaresh Steppe",
+   "creatures": [
+    "Sphinx",
+    "Lamassu"
+   ]
+  },
+  {
+   "order": 73,
+   "id": "issavi-south-hunt",
+   "name": "Issavi Steppe",
+   "creatures": [
+    "Young Goanna",
+    "Ogre Rowdy",
+    "Adult Goanna",
+    "Manticore",
+    "Ogre Sage",
+    "Sphinx",
+    "Clomp",
+    "Feral Sphinx",
+    "Lamassu"
+   ]
+  },
+  {
+   "order": 74,
+   "id": "ice-library-hunt",
+   "name": "Ice Library",
+   "creatures": [
+    "Animated Feather",
+    "Icecold Book",
+    "Squid Warden"
+   ]
+  },
+  {
+   "order": 75,
+   "id": "fire-library-hunt",
+   "name": "Fire Library",
+   "creatures": [
+    "Burning Book",
+    "Rage Squid",
+    "Guardian of Tales",
+    "Ink Blob"
+   ]
+  }
+ ]
+}

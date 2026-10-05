@@ -1,0 +1,12 @@
+# dados pessoais / de execucao: cada instalacao tem os seus
+config.json
+memory.json
+logs/
+
+# build
+build/
+dist/
+spec/
+*.spec
+__pycache__/
+*.pyc
