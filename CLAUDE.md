@@ -18,7 +18,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - `idledeck.py` (conexao/descoberta), `launcher.py` (abre o IdleDeck com a porta), `updater.py` (botao Atualizar),
   `gui.py` (CustomTkinter + bandeja), `runner.py` (thread do motor), `catalog.py` + `data/hunts.json` (75 caçadas, ordem do jogo),
   `config.py` (padroes), `paths.py` (arquivos ao lado do .exe quando empacotado).
-- `tests/` (70 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
+- `tests/` (77 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
 
 ## O que o bot faz (regras)
 - **Capacidade:** QUALQUER conta do time >= `capacity_pct` -> a lider sai (leva todos, 5s) -> cada conta vende a MOCHILA (marca tudo)
@@ -27,6 +27,9 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - **Stamina/treino:** QUALQUER conta <= `training.stamina_minutes` (15) -> time inteiro pra cidade, cada personagem inicia o treino
   online da habilidade escolhida (`training.by_name`, senao padrao da vocacao; o jogo oferece as 6 a todos). Lembra a hunt
   em memory.json e VOLTA quando TODAS as contas treinando chegam a `resume_stamina_minutes` (600 = 10h).
+- **Nunca parado na cidade (v1.2.2):** conta na cidade sem treino por > `idle_city_seconds` (90) -> se o time esta em modo treino
+  (memory.json), stamina baixa ou hunt desconhecida: reinicia o treino dela; senao volta pra ultima hunt. O log avisa
+  "saiu do treino" com os toasts da tela (causa de o treino cair ainda NAO descoberta - ver log do usuario de 05/10).
 - **Bestiary em cadeia:** contador do cabecalho da hunt N/N em TODAS as contas -> proxima da lista (config `bestiary_chain`).
 - O bot SEMPRE age (nao existe modo simulacao). O usuario protege itens antes; tudo da mochila pode ser vendido.
 

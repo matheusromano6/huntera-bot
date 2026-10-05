@@ -388,5 +388,85 @@ class ResumeTests(unittest.TestCase):
         self.assertEqual(w.calls, [])
 
 
+class IdleCityTests(unittest.TestCase):
+    """Conta nunca fica parada na cidade: ou treina, ou volta pra hunt."""
+
+    def city_world(self, ek=300, ed=300, training=()):
+        w = vocation_world(stamina_ek=ek, stamina_ed=ed)
+        for a in w.accounts.values():
+            a.state.phase = "training" if a.name in training else "city"
+        return w
+
+    def test_training_dropped_restarts_training_after_grace(self):
+        w = self.city_world()
+        engine, clock = make_engine(w)
+        engine.memory.set(("Aliado Um", "Aliado Dois"), {"hunt": "Vampire Crypt", "tier": None})
+        engine.tick()
+        self.assertEqual(w.calls, [])                       # ainda dentro da tolerancia
+        clock.t += engine.cfg["idle_city_seconds"] + 1
+        engine.tick()
+        self.assertEqual(sorted(c[:2] for c in w.calls), [("train", "ALIADO DOIS"), ("train", "ALIADO UM")])
+        self.assertTrue(all(a.state.phase == "training" for a in w.accounts.values()))
+
+    def test_only_the_idle_account_restarts_training(self):
+        w = self.city_world(training=("ALIADO UM",))
+        engine, clock = make_engine(w)
+        engine.memory.set(("Aliado Um", "Aliado Dois"), {"hunt": "Vampire Crypt", "tier": None})
+        engine.tick()
+        clock.t += engine.cfg["idle_city_seconds"] + 1
+        engine.tick()
+        self.assertEqual([c[:2] for c in w.calls], [("train", "ALIADO DOIS")])
+
+    def test_idle_with_stamina_goes_back_to_last_hunt(self):
+        w = vocation_world()
+        engine, clock = make_engine(w)
+        engine.tick()                                       # caçando: guarda a hunt
+        for a in w.accounts.values():
+            a.state.phase = "city"
+        engine.tick()
+        clock.t += engine.cfg["idle_city_seconds"] + 1
+        engine.tick()
+        self.assertEqual(w.calls[-1], ("start", "ALIADO UM", "Rat Cellars", None, True))
+
+    def test_idle_with_low_stamina_trains_and_remembers_hunt(self):
+        w = self.city_world(ek=10)
+        for a in w.accounts.values():
+            a.state.hunt_name = "Rat Cellars"
+        engine, clock = make_engine(w)
+        engine.tick()
+        clock.t += engine.cfg["idle_city_seconds"] + 1
+        engine.tick()
+        self.assertEqual(sorted(c[0] for c in w.calls), ["train", "train"])
+        self.assertEqual(engine.memory.get(("Aliado Um", "Aliado Dois")), {"hunt": "Rat Cellars", "tier": None})
+
+    def test_idle_without_known_hunt_trains(self):
+        w = self.city_world()
+        for a in w.accounts.values():
+            a.state.hunt_name = ""
+        engine, clock = make_engine(w)
+        engine.tick()
+        clock.t += engine.cfg["idle_city_seconds"] + 1
+        engine.tick()
+        self.assertEqual(sorted(c[0] for c in w.calls), ["train", "train"])
+
+    def test_resume_also_when_some_account_already_in_city(self):
+        w = self.city_world(ek=650, ed=700, training=("ALIADO UM",))
+        engine, _ = make_engine(w)
+        engine.memory.set(("Aliado Um", "Aliado Dois"), {"hunt": "Vampire Crypt", "tier": "Ousado"})
+        engine.tick()
+        self.assertEqual(w.calls[-1], ("start", "ALIADO UM", "Vampire Crypt", "Ousado", True))
+
+    def test_reports_when_account_leaves_training(self):
+        w = self.city_world(training=("ALIADO UM", "ALIADO DOIS"))
+        logs = []
+        engine, _ = make_engine(w)
+        engine.log = logs.append
+        engine.tick()
+        w.accounts["ALIADO UM"].state.phase = "city"
+        w.accounts["ALIADO UM"].state.toasts = ["Treino encerrado"]
+        engine.tick()
+        self.assertTrue(any("saiu do treino" in m and "Treino encerrado" in m for m in logs))
+
+
 if __name__ == "__main__":
     unittest.main()

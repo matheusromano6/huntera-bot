@@ -11,6 +11,8 @@ Regras (do mapeamento ao vivo):
   cancela o treino e volta pra hunt em que estava (lembrada em memory.json).
 - Stamina: QUALQUER conta do time com <= training.stamina_minutes -> todo o time vai pra cidade e
   cada conta inicia o treino da habilidade da sua vocacao (EK axe, RP distance, ED/MS magic level).
+- Nunca fica parado na cidade: conta na cidade (sem treino) por mais de idle_city_seconds -> se o time
+  estava em treino (ou a stamina esta baixa) reinicia o treino; senao volta pra hunt conhecida.
 - Nunca age enquanto alguem esta carregando/saindo; depois de um ciclo espera (cooldown).
 """
 import time
@@ -90,6 +92,9 @@ class Engine:
         self.warned = {}                # (chave) -> ultimo aviso
         self.options_retry = {}         # nome -> quando tentar ler as opcoes de treino de novo
         self.last_status = 0.0
+        self.last_phase = {}            # nome -> fase lida no tick anterior
+        self.idle_since = {}            # chave do grupo -> desde quando alguem esta parado na cidade
+        self.last_hunt = {}             # chave do grupo -> (hunt, tier) da ultima vez que estava caçando
         self.snapshot = {"states": {}, "groups": {}}   # lido pela interface (so' leitura)
 
     # ---------------------------------------------------------------- leitura
@@ -119,8 +124,19 @@ class Engine:
         for st in states.values():
             cap = "?" if st.cap_pct is None else f"{st.cap_pct:.0f}%"
             best = f" best {st.bestiary_done}/{st.bestiary_total}" if st.bestiary_total else ""
-            parts.append(f"{st.name}: {st.phase} cap {cap}{best}")
+            stam = "" if st.stamina_min is None else f" st {st.stamina_min // 60}:{st.stamina_min % 60:02d}h"
+            parts.append(f"{st.name}: {st.phase} cap {cap}{stam}{best}")
         self.log("status | " + " | ".join(parts))
+
+    def _watch_phases(self, states):
+        """Avisa quando uma conta sai do treino sem o bot mandar (com os avisos do jogo na tela)."""
+        for name, st in states.items():
+            before = self.last_phase.get(name)
+            if before == "training" and st.phase != "training":
+                toasts = " / ".join(st.toasts) if st.toasts else "nenhum aviso na tela"
+                stam = "?" if st.stamina_min is None else f"{st.stamina_min // 60}:{st.stamina_min % 60:02d}h"
+                self.log(f"[{name}] saiu do treino ({st.phase}, stamina {stam}) - avisos: {toasts}")
+            self.last_phase[name] = st.phase
 
     # ----------------------------------------------------------------- decisao
     def _capacity_trigger(self, group):
@@ -222,7 +238,7 @@ class Engine:
     def decide_resume(self, group):
         """Todas as contas treinando e com stamina suficiente -> (hunt, tier) memorizados, senao None."""
         states = list(group.states.values())
-        if not states or any(s.phase != "training" for s in states):
+        if not states or any(s.phase not in ("training", "city") for s in states):
             return None
         need = self.cfg["training"]["resume_stamina_minutes"]
         if any(s.stamina_min is None or s.stamina_min < need for s in states):
@@ -268,8 +284,11 @@ class Engine:
             return False
         if hunt:      # lembra onde voltar quando a stamina recuperar
             self.memory.set(group.key, {"hunt": hunt, "tier": tier})
+        return self._start_trainings(group, group.members)
+
+    def _start_trainings(self, group, members):
         ok = True
-        for m in group.members:
+        for m in members:
             skill = self.training_skill_for(m.name, group.states[m.name].vocation if m.name in group.states else m.read().vocation)
             if not skill:
                 self.log(f"[{m.name}] vocacao sem habilidade de treino configurada")
@@ -281,6 +300,42 @@ class Engine:
                 self.log(f"[{m.name}] ERRO ao iniciar o treino: {error}")
                 ok = False
         return ok
+
+    def decide_idle(self, group):
+        """Alguem parado na cidade (sem treino) ha idle_city_seconds e ninguem caçando/saindo/carregando.
+        Retorna ('train', [contas]) | ('hunt', hunt, tier) | None."""
+        states = group.states
+        idle = [m for m in group.members if m.name in states and states[m.name].phase == "city"]
+        if not states or not idle or any(s.phase not in ("city", "training") for s in states.values()):
+            self.idle_since.pop(group.key, None)
+            return None
+        since = self.idle_since.setdefault(group.key, self.clock())
+        if self.clock() - since < self.cfg["idle_city_seconds"]:
+            return None
+        tr = self.cfg["training"]
+        saved = self.memory.get(group.key)
+        known = (saved["hunt"], saved.get("tier")) if saved else self.last_hunt.get(group.key)
+        if not known:
+            current = next((s.hunt_name for s in states.values() if s.hunt_name), "")
+            known = (current, self.cfg["hunt_tiers"].get(current)) if current else None
+        stam = [s.stamina_min for s in states.values()]
+        low = tr.get("enabled") and any(v is not None and v <= tr["stamina_minutes"] for v in stam)
+        if tr.get("enabled") and (saved or low or not known):
+            if not saved and known:
+                self.memory.set(group.key, {"hunt": known[0], "tier": known[1]})
+            return ("train", idle)
+        if known:
+            return ("hunt",) + tuple(known)
+        return None
+
+    def run_idle(self, group, decision):
+        if decision[0] == "train":
+            names = ", ".join(m.name for m in decision[1])
+            self.log(f"[{group.label}] PARADO NA CIDADE ({names}): reiniciando o treino online")
+            return self._start_trainings(group, decision[1])
+        _, hunt, tier = decision
+        self.log(f"[{group.label}] PARADO NA CIDADE: voltando pra '{hunt}'")
+        return self.run_resume(group, hunt, tier)
 
     def run_cycle(self, group, reason, hunt, tier):
         """sair -> vender (todos) -> voltar. Retorna True se terminou todo mundo em hunt."""
@@ -319,12 +374,26 @@ class Engine:
         now = self.clock()
         if now < self.cooldown.get(group.key, 0):
             return
+        if all(s.phase == "hunting" for s in group.states.values()):
+            current = next((s.hunt_name for s in group.states.values() if s.hunt_name), "")
+            if current:
+                self.last_hunt[group.key] = (current, self.cfg["hunt_tiers"].get(current))
         resume = self.decide_resume(group)
         if resume:
             try:
                 ok = self.run_resume(group, *resume)
             except Exception as error:
                 self.log(f"[{group.label}] ERRO ao voltar do treino: {error}")
+                ok = False
+            self.cooldown[group.key] = self.clock() + (self.cfg["cooldown_ok_seconds"] if ok else self.cfg["cooldown_fail_seconds"])
+            return
+        idle = self.decide_idle(group)
+        if idle:
+            self.idle_since.pop(group.key, None)
+            try:
+                ok = self.run_idle(group, idle)
+            except Exception as error:
+                self.log(f"[{group.label}] ERRO ao tirar da cidade: {error}")
                 ok = False
             self.cooldown[group.key] = self.clock() + (self.cfg["cooldown_ok_seconds"] if ok else self.cfg["cooldown_fail_seconds"])
             return
@@ -382,6 +451,7 @@ class Engine:
             "groups": {m.name: (g.label, g.is_team, g.leader.name if g.leader else "") for g in groups for m in g.members},
         }
         self._status(states)
+        self._watch_phases(states)
         for acc in self.accounts:
             st = states.get(acc.name)
             if st:

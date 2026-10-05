@@ -35,6 +35,7 @@ Logs em `logs/huntera_AAAA-MM-DD.log`. Testes: `python -m unittest discover -s t
 | Capacidade | **qualquer** conta do time chega em `capacity_pct` (90%) | a lider sai (leva o time), cada conta vende a mochila, a lider reinicia "com o time" na mesma hunt. Conta sem party faz sozinha |
 | Despacho | despacho pronto (1x/hora) e capacidade >= `dispatch.min_cap_pct` | "Despachar loot" sem sair da hunt |
 | Stamina / treino | **qualquer** conta do time com <= `training.stamina_minutes` (0:15h) | o time vai pra cidade e cada conta inicia o treino online da sua vocacao (Knight axe, Paladin distance, Druid/Sorcerer magic level); lembra a hunt em `memory.json` |
+| Parado na cidade | conta na cidade **sem treino** por mais de `idle_city_seconds` (90s) | se o time estava em treino (ou stamina baixa / hunt desconhecida) reinicia o treino online dela; senao o time volta pra ultima hunt |
 | Volta do treino | **todas** as contas treinando com stamina >= `training.resume_stamina_minutes` (600 = 10h) | cancela o treino de todas e a lider reinicia a hunt lembrada (com o time) |
 | Bestiary em cadeia | cabecalho do rastreador fecha N/N em **todas** as contas e `bestiary_chain.enabled` | vai pra proxima hunt da lista |
 

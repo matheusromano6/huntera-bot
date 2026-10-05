@@ -49,6 +49,8 @@ DEFAULTS = {
     "hunt_tiers": {},         # ex: {"Vampire Crypt": "Ousado"}
     # esperas (segundos)
     "timeouts": {"leave": 45, "start": 75, "window": 8},
+    # conta parada na cidade (sem treino) por mais disso -> reinicia o treino ou volta pra hunt
+    "idle_city_seconds": 90,
     # depois de um ciclo (ok ou falho) fica esse tempo sem tentar de novo no mesmo time
     "cooldown_ok_seconds": 120,
     "cooldown_fail_seconds": 600,
