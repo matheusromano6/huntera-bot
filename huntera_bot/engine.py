@@ -265,10 +265,14 @@ class Engine:
         if any(s.stamina_min is None or s.stamina_min < need for s in states):
             return None
         saved = self.memory.get(group.key)
-        if not saved:
-            self._warn(("noresume", group.key), f"[{group.label}] stamina ok, mas nao sei em qual hunt voltar (sem memoria)")
-            return None
-        return saved["hunt"], saved.get("tier")
+        if saved:
+            return saved["hunt"], saved.get("tier")
+        hunt = self.group_hunt(group)      # sem memoria (time mudou/bot reaberto): a hunt que as contas mostram
+        if hunt:
+            self.log(f"[{group.label}] sem hunt na memoria - usando a que aparece no jogo: '{hunt}'")
+            return hunt, self.cfg["hunt_tiers"].get(hunt)
+        self._warn(("noresume", group.key), f"[{group.label}] stamina ok, mas nao sei em qual hunt voltar (sem memoria)")
+        return None
 
     def run_resume(self, group, hunt, tier):
         """Cancela o treino de todos e inicia a hunt de novo (time: a lider)."""

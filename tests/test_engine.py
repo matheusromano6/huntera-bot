@@ -394,8 +394,16 @@ class ResumeTests(unittest.TestCase):
         engine.tick()
         self.assertEqual(w.calls, [])
 
-    def test_no_memory_means_no_return(self):
+    def test_no_memory_uses_hunt_shown_in_game(self):
         w = self.training_world()
+        engine, _ = self.engine_with_memory(w, saved=False)
+        engine.tick()
+        self.assertEqual(w.calls[-1], ("start", "ALIADO UM", "Rat Cellars", None, True))
+
+    def test_no_memory_and_no_hunt_means_no_return(self):
+        w = self.training_world()
+        for a in w.accounts.values():
+            a.state.hunt_name = ""
         engine, _ = self.engine_with_memory(w, saved=False)
         engine.tick()
         self.assertEqual(w.calls, [])
