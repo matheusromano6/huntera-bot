@@ -5,6 +5,7 @@ import re
 import time
 from dataclasses import dataclass, field
 
+from . import imbuing
 from . import selectors as S
 
 READ_JS = """(S) => {
@@ -33,8 +34,33 @@ READ_JS = """(S) => {
       label: txt(r.querySelector(S.BESTIARY_LABEL)), count: txt(r.querySelector(S.BESTIARY_COUNT))})),
     party: members,
     toasts: Array.from(document.querySelectorAll(S.TOAST)).filter(vis).map(txt),
+    gold: txt(q(S.GOLD)),
+    pips: Array.from(document.querySelectorAll(S.EQUIP_SLOT)).map(s => ({
+      equip: s.getAttribute('data-equip') || '', total: s.querySelectorAll(S.IMBUE_PIP).length,
+      filled: s.querySelectorAll(S.IMBUE_PIP + '.filled').length})).filter(p => p.total > 0),
   };
 }"""
+
+# tooltip de cada item equipado com slot de imbuement: nome na 1a linha, depois os slots
+EQUIP_JS = """(S) => Array.from(document.querySelectorAll(S.EQUIP_SLOT)).map((s, i) => ({
+  i, equip: s.getAttribute('data-equip') || '', total: s.querySelectorAll(S.IMBUE_PIP).length})).filter(p => p.total > 0)"""
+
+TOOLTIP_JS = """(S) => { const t = Array.from(document.querySelectorAll(S.TOOLTIP)).find(e => e.getBoundingClientRect().width > 0);
+  return t ? t.innerText : ''; }"""
+
+# santuario: itens EQUIPADOS com seus slots
+SHRINE_JS = """(S) => Array.from(document.querySelectorAll(S.SHRINE_ITEM)).map((it, i) => ({
+  i, name: ((it.querySelector(S.SHRINE_ITEM_NAME) || {}).innerText || '').trim(),
+  where: ((it.querySelector(S.SHRINE_ITEM_WHERE) || {}).innerText || '').trim(),
+  slots: Array.from(it.querySelectorAll(S.SHRINE_SLOT)).map(s => ({filled: s.classList.contains('filled'), title: s.title || ''}))}))"""
+
+LINES_JS = """(S) => Array.from(document.querySelectorAll(S.SHRINE_LINE)).map(l => ({
+  name: ((l.querySelector(S.SHRINE_LINE_NAME) || {}).innerText || '').trim(), disabled: !!l.disabled}))"""
+
+MARKET_JS = """(S) => Array.from(document.querySelectorAll(S.MARKET_SELL_ROWS)).map(r => {
+  const td = Array.from(r.querySelectorAll('td')).map(x => (x.innerText || '').trim());
+  return {seller: td[0] || '', qty: parseInt((td[1] || '').replace(/[^0-9]/g, '')) || 0, price: parseInt((td[2] || '').replace(/[^0-9]/g, '')) || 0};
+}).filter(r => r.qty > 0 && r.price > 0)"""
 
 _SEL = {k: v for k, v in vars(S).items() if k.isupper() and isinstance(v, str)}
 _CAP_RE = re.compile(r"([0-9]+(?:\.[0-9]+)?)\s+de\s+([0-9]+(?:\.[0-9]+)?)")
@@ -61,6 +87,8 @@ class State:
     party_names: list = field(default_factory=list)
     leader_name: str = ""
     toasts: list = field(default_factory=list)
+    gold: int | None = None
+    imbue_pips: list = field(default_factory=list)   # [(equip, slots, ativos)] - muda quando um imbuement entra/acaba
 
     @property
     def bestiary_complete(self):
@@ -102,7 +130,34 @@ def parse_state(raw):
     st.party_names = [p["name"] for p in party if p.get("name")]
     st.leader_name = next((p["name"] for p in party if p.get("leader")), "")
     st.toasts = raw.get("toasts") or []
+    st.gold = imbuing.number(raw.get("gold"))
+    st.imbue_pips = [(p["equip"], p["total"], p["filled"]) for p in raw.get("pips") or []]
     return st
+
+
+def parse_tooltip(text):
+    """Tooltip de item equipado -> (nome, [{'active', 'minutes'}]) - um por slot de imbuement, na ordem."""
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    if not lines:
+        return "", []
+    slots = []
+    for line in lines[1:]:
+        if line.casefold().startswith("slot de imbuement vazio") or line.casefold().startswith("empty imbuement slot"):
+            slots.append({"active": None, "minutes": None})
+            continue
+        tier, family = imbuing.split_active(line.split("(")[0].strip())
+        if tier and "(" in line:
+            slots.append({"active": f"{tier} {family}", "minutes": imbuing.minutes(line)})
+    return lines[0], slots
+
+
+def parse_slot_title(title):
+    """Title do slot no santuario: 'Basic Demon Presence — resta 20h 0m' / 'Slot de imbuement vazio'."""
+    name, sep, rest = (title or "").partition("—")
+    tier, family = imbuing.split_active(name.strip())
+    if not sep or not tier:
+        return {"active": None, "minutes": None}
+    return {"active": f"{tier} {family}", "minutes": imbuing.minutes(rest)}
 
 
 class GameError(Exception):
@@ -154,7 +209,8 @@ class Account:
 
     def close_windows(self):
         """Fecha janelas que o bot abriu (sem confirmar nada)."""
-        for window, closer in ((S.QS_WINDOW, S.QS_CANCEL), (S.HUNT_WINDOW, S.HUNT_CLOSE)):
+        for window, closer in ((S.PROMPT, S.PROMPT_CANCEL), (S.QS_WINDOW, S.QS_CANCEL), (S.HUNT_WINDOW, S.HUNT_CLOSE),
+                               (S.SHRINE_CLOSE, S.SHRINE_CLOSE), (S.TRADE_CLOSE, S.TRADE_CLOSE)):
             try:
                 if self._visible(window):
                     self._click(closer, 3000)
@@ -338,6 +394,271 @@ class Account:
         if ok:
             self.log(f"[{self.name}] treino cancelado")
         return ok
+
+    # ------------------------------------------------------------- imbuements
+    def read_equipment(self):
+        """Itens equipados com slot de imbuement (passa o mouse em cada um e le o tooltip; funciona em
+        qualquer lugar, inclusive em caçada). -> {item: [{'active', 'minutes'}]}"""
+        out = {}
+        try:
+            for slot in self.page.evaluate(EQUIP_JS, _SEL):
+                self.page.locator(S.EQUIP_SLOT).nth(slot["i"]).hover(timeout=3000)
+                time.sleep(0.35)
+                name, slots = parse_tooltip(self.page.evaluate(TOOLTIP_JS, _SEL))
+                if name:
+                    out[name] = slots or [{"active": None, "minutes": None}] * slot["total"]
+        finally:
+            self.page.mouse.move(2, 2)
+        return out
+
+    def _shrine_open(self):
+        if not self._visible(S.SHRINE_BTN):
+            raise GameError("santuario indisponivel (a conta precisa estar na cidade)")
+        if not self._visible(S.SHRINE_ITEM):
+            self._click(S.SHRINE_BTN, 4000)
+            if not self._wait(lambda: self._visible(S.SHRINE_ITEM), 8):
+                raise GameError("o santuario de imbuements nao abriu")
+            time.sleep(0.5)
+
+    def _shrine_close(self):
+        try:
+            if self._visible(S.PROMPT):
+                self._click(S.PROMPT_CANCEL, 2000)
+            if self._visible(S.SHRINE_CLOSE):
+                self._click(S.SHRINE_CLOSE, 3000)
+                time.sleep(0.4)
+        except Exception:
+            pass
+
+    def _shrine_items(self):
+        return [it for it in self.page.evaluate(SHRINE_JS, _SEL) if it["where"].casefold().startswith(("equipado", "worn"))]
+
+    def _shrine_item(self, item):
+        found = next((it for it in self._shrine_items() if it["name"].casefold() == item.casefold()), None)
+        if found is None:
+            raise GameError(f"'{item}' nao esta equipado")
+        return found
+
+    def _shrine_select(self, item, family, tier):
+        """Escolhe um slot VAZIO do item, o nivel e o imbuement. Erro se nao der."""
+        it = self._shrine_item(item)
+        free = next((n for n, s in enumerate(it["slots"]) if not s["filled"]), None)
+        if free is None:
+            raise GameError(f"'{item}' nao tem slot livre")
+        card = self.page.locator(S.SHRINE_ITEM).nth(it["i"])
+        self._click(card.locator(S.SHRINE_SLOT).nth(free))
+        time.sleep(0.4)
+        self._click(self.page.locator(S.SHRINE_TIER).filter(has_text=tier).first)
+        time.sleep(0.3)
+        lines = self.page.evaluate(LINES_JS, _SEL)
+        index = next((n for n, line in enumerate(lines) if line["name"] == family), None)
+        if index is None or lines[index]["disabled"]:
+            raise GameError(f"'{item}' nao aceita {tier} {family}")
+        self._click(self.page.locator(S.SHRINE_LINE).nth(index))
+        time.sleep(0.6)
+        head = self.page.locator(S.SHRINE_OFFER).first.inner_text().strip()
+        if head != f"{tier} {family}":
+            raise GameError(f"oferta errada na tela: '{head}'")
+
+    def _counts(self):
+        out = []
+        for text in self.page.locator(S.SHRINE_COUNTS).all_inner_texts():
+            have, _, need = text.partition("/")
+            out.append((imbuing.number(have) or 0, imbuing.number(need) or 0))
+        return out
+
+    def shrine_read(self, scan_allowed=True):
+        """Abre o santuario e le os itens equipados: slots (com o tempo exato) e, se pedido, o que cada item
+        aceita por nivel. -> {item: {'slots': [...], 'allowed': {tier: [imbuements]} | None}}"""
+        try:
+            self._shrine_open()
+            out = {}
+            for it in self._shrine_items():
+                slots = [parse_slot_title(s["title"]) if s["filled"] else {"active": None, "minutes": None} for s in it["slots"]]
+                entry = {"slots": slots, "allowed": None}
+                free = next((n for n, s in enumerate(it["slots"]) if not s["filled"]), None)
+                if scan_allowed and free is not None:
+                    card = self.page.locator(S.SHRINE_ITEM).nth(it["i"])
+                    self._click(card.locator(S.SHRINE_SLOT).nth(free))
+                    time.sleep(0.4)
+                    allowed = {}
+                    for tier in imbuing.TIERS:
+                        self._click(self.page.locator(S.SHRINE_TIER).filter(has_text=tier).first)
+                        time.sleep(0.3)
+                        allowed[tier] = [line["name"] for line in self.page.evaluate(LINES_JS, _SEL) if not line["disabled"]]
+                    for slot in slots:     # o que ja esta no item nao aparece na lista, mas e' aceito
+                        tier, family = imbuing.split_active(slot["active"])
+                        if tier:
+                            for t in imbuing.TIERS[:imbuing.TIERS.index(tier) + 1]:
+                                if family not in allowed[t]:
+                                    allowed[t].append(family)
+                    entry["allowed"] = allowed
+                out[it["name"]] = entry
+            return out
+        finally:
+            self._shrine_close()
+
+    def shrine_offer(self, item, family, tier, catalog):
+        """Le o que a conta tem para um imbuement. -> {'have': {material: qtd}, 'tokens_have': int|None}"""
+        try:
+            self._shrine_open()
+            self._shrine_select(item, family, tier)
+            mats = imbuing.materials(catalog, family, tier)
+            have = {m["name"]: c[0] for m, c in zip(mats, self._counts())}
+            tokens_have = None
+            pay = self.page.locator(S.SHRINE_PAY).filter(has_text="Tokens")
+            if pay.count():
+                self._click(pay.first)
+                time.sleep(0.3)
+                counts = self._counts()
+                tokens_have = counts[0][0] if counts else None
+                self._click(self.page.locator(S.SHRINE_PAY).filter(has_text="Sources").first)
+                time.sleep(0.2)
+            return {"have": have, "tokens_have": tokens_have}
+        finally:
+            self._shrine_close()
+
+    def shrine_apply(self, item, family, tier, protect, tokens=False):
+        """Imbui (escolhe slot vazio, nivel, imbuement, forma de pagar e protecao; confirma). -> (ok, mensagem)"""
+        try:
+            self._shrine_open()
+            self._shrine_select(item, family, tier)
+            pay = self.page.locator(S.SHRINE_PAY).filter(has_text="Tokens" if tokens else "Sources")
+            if pay.count():
+                self._click(pay.first)
+                time.sleep(0.3)
+            counts = self._counts()
+            if any(have < need for have, need in counts):
+                raise GameError(f"faltam {'gold tokens' if tokens else 'materiais'} para {tier} {family}: {counts}")
+            box = self.page.locator(S.SHRINE_PROTECT).first
+            if box.is_checked() != bool(protect):
+                box.click()
+                time.sleep(0.3)
+            if self.page.locator(S.SHRINE_APPLY).first.is_disabled():
+                raise GameError("botao Imbuir desabilitado (gold insuficiente?)")
+            self._click(S.SHRINE_APPLY, 3000)
+            if not self._wait(lambda: self._visible(S.PROMPT), 5):
+                raise GameError("a confirmacao do imbuement nao apareceu")
+            text = self.page.locator(S.PROMPT).first.inner_text()
+            if family not in text or item not in text:
+                raise GameError(f"confirmacao inesperada: {text[:120]}")
+            self._click(S.PROMPT_CONFIRM, 3000)
+            status = self.page.locator(S.SHRINE_STATUS)
+            if not self._wait(lambda: (status.get_attribute("class") or "") in ("ok", "failed"), 10):
+                raise GameError("sem resposta do santuario")
+            ok = status.get_attribute("class") == "ok"
+            return ok, status.inner_text().strip()
+        finally:
+            self._shrine_close()
+
+    def shrine_remove(self, item, family):
+        """Remove um imbuement ativo (custa gold, nao devolve nada)."""
+        try:
+            self._shrine_open()
+            it = self._shrine_item(item)
+            index = next((n for n, s in enumerate(it["slots"])
+                          if s["filled"] and imbuing.split_active(parse_slot_title(s["title"])["active"])[1] == family), None)
+            if index is None:
+                return True
+            self._click(self.page.locator(S.SHRINE_ITEM).nth(it["i"]).locator(S.SHRINE_SLOT).nth(index))
+            time.sleep(0.5)
+            self._click(S.SHRINE_REMOVE, 3000)
+            if not self._wait(lambda: self._visible(S.PROMPT), 5):
+                raise GameError("a confirmacao de remover nao apareceu")
+            self._click(S.PROMPT_CONFIRM, 3000)
+            return self._wait(lambda: not any(
+                s["filled"] and family in s["title"] for s in self._shrine_item(item)["slots"]), 8)
+        finally:
+            self._shrine_close()
+
+    def _toasts(self):
+        return self.page.evaluate("(s) => Array.from(document.querySelectorAll(s)).map(t => (t.innerText || '').trim())", S.TOAST)
+
+    def _market_open(self):
+        if not self._visible(S.MARKET_SEARCH):
+            if not self._visible(S.TRADE_CLOSE):
+                self._click(S.STORE_NAV, 4000)
+                if not self._wait(lambda: self._visible(S.TRADE_TAB), 6):
+                    raise GameError("a loja nao abriu")
+                time.sleep(0.6)
+            self._click(self.page.locator(S.TRADE_TAB).filter(has_text="LEIL").first)
+            if not self._wait(lambda: self._visible(S.MARKET_SEARCH), 6):
+                raise GameError("o leilao nao abriu")
+            time.sleep(0.6)
+
+    def _market_close(self):
+        try:
+            if self._visible(S.MARKET_SEARCH):
+                self.page.locator(S.MARKET_SEARCH).fill("")
+            if self._visible(S.TRADE_CLOSE):
+                self._click(S.TRADE_CLOSE, 3000)
+                time.sleep(0.4)
+        except Exception:
+            pass
+
+    def _market_select(self, name):
+        self.page.locator(S.MARKET_SEARCH).fill(name)
+        time.sleep(0.8)
+        items = self.page.locator(S.MARKET_ITEM)
+        for n in range(items.count()):
+            label = items.nth(n).locator(S.MARKET_ITEM_NAME)
+            if label.count() and label.first.inner_text().strip().casefold() == name.casefold():
+                self._click(items.nth(n))
+                time.sleep(1.2)
+                return True
+        return False
+
+    def market_offers(self, names):
+        """Ofertas de VENDA do leilao (da mais barata). -> {material: [{'seller', 'qty', 'price'}]}"""
+        out = {}
+        try:
+            self._market_open()
+            for name in names:
+                out[name] = self.page.evaluate(MARKET_JS, _SEL) if self._market_select(name) else []
+        finally:
+            self._market_close()
+        return out
+
+    def market_buy(self, name, qty, max_total):
+        """Compra 'qty' das ofertas mais baratas sem passar de max_total de gold. -> (comprados, gasto)."""
+        bought, spent = 0, 0
+        try:
+            self._market_open()
+            if not self._market_select(name):
+                raise GameError(f"'{name}' nao encontrado no leilao")
+            while bought < qty:
+                rows = self.page.evaluate(MARKET_JS, _SEL)
+                if not rows:
+                    break
+                row = rows[0]
+                take = min(qty - bought, row["qty"])
+                if spent + take * row["price"] > max_total:
+                    self.log(f"[{self.name}] leilao: {name} passaria do limite ({spent + take * row['price']} > {max_total}) - parei")
+                    break
+                self._click(self.page.locator(S.MARKET_SELL_ROWS).first.locator(S.MARKET_TAKE))
+                if not self._wait(lambda: self._visible(S.MARKET_ACCEPT), 4):
+                    raise GameError("o formulario de compra nao abriu")
+                terms = self.page.locator(S.MARKET_ACCEPT_TERMS).first.inner_text()
+                if imbuing.number(terms.split("cada")[0]) != row["price"]:
+                    raise GameError(f"preco mudou na tela: {terms}")
+                self.page.locator(S.MARKET_AMOUNT).first.fill(str(take))
+                time.sleep(0.3)
+                total = imbuing.number(self.page.locator(S.MARKET_TOTAL).first.inner_text())
+                if total != take * row["price"]:
+                    self._click(S.MARKET_DISMISS, 2000)
+                    raise GameError(f"total inesperado: {total} (esperado {take * row['price']})")
+                before = set(self._toasts())
+                self._click(S.MARKET_CONFIRM, 3000)
+                done = lambda: any(t not in before and "bought" in t and name.casefold() in t.casefold() for t in self._toasts())
+                if not self._wait(done, 6):
+                    raise GameError(f"o jogo nao confirmou a compra de {take}x {name}")
+                time.sleep(0.6)
+                bought += take
+                spent += total
+                self.log(f"[{self.name}] leilao: comprei {take}x {name} a {row['price']} ({total} gold)")
+        finally:
+            self._market_close()
+        return bought, spent
 
     def screenshot_state(self):
         return json.dumps(self.page.evaluate(READ_JS, _SEL), ensure_ascii=False)

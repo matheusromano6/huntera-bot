@@ -30,6 +30,14 @@ class Memory:
     def all_options(self):
         return dict(self.data.get("options") or {})
 
+    # imbuements: o que o bot leu do jogo (a interface mostra isso mesmo com as contas em caçada)
+    def imbue(self):
+        return self.data.setdefault("imbue", {"items": {}, "equipment": {}, "have": {}, "prices": {}})
+
+    def set_imbue(self, section, key_, value):
+        self.imbue().setdefault(section, {})[key_] = value
+        self._save()
+
     def get(self, names):
         return self.data.get(key(names))
 

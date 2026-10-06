@@ -19,6 +19,7 @@ import time
 from dataclasses import dataclass, field
 
 from . import config
+from .imbuer import Imbuer
 from .memory import Memory
 
 
@@ -105,6 +106,7 @@ class Engine:
         self.idle_since = {}            # chave do grupo -> desde quando alguem esta parado na cidade
         self.last_hunt = {}             # chave do grupo -> (hunt, tier) da ultima vez que estava caçando
         self.snapshot = {"states": {}, "groups": {}}   # lido pela interface (so' leitura)
+        self.imbuer = Imbuer(cfg, self.memory, log, clock)
 
     # ---------------------------------------------------------------- leitura
     def read_all(self):
@@ -221,6 +223,9 @@ class Engine:
         low = self._stamina_trigger(group)
         if low:                      # stamina vem antes de tudo: sem ela nao ha mais hunt
             return ("training", "stamina baixa: " + ", ".join(low), current, None)
+        imbue = self.imbuer.exit_reason(group)
+        if imbue:                    # imbuement planejado faltando (primeira vez ou acabou com 'Renovar')
+            return ("cycle", imbue, current, self.cfg["hunt_tiers"].get(current))
         full = self._capacity_trigger(group)
         if full:
             return ("cycle", "capacidade: " + ", ".join(full), current, self.cfg["hunt_tiers"].get(current))
@@ -284,6 +289,7 @@ class Engine:
                 return False
         if not self._wait_all(group, "city", 10):
             return False
+        self._imbue(group)
         starter = group.leader if group.is_team else group.members[0]
         if group.is_team and starter is None:
             self._warn(("noleader", group.key), f"[{group.label}] time sem lider gerenciada")
@@ -309,7 +315,16 @@ class Engine:
             return False
         if hunt:      # lembra onde voltar quando a stamina recuperar
             self.memory.set(group.key, {"hunt": hunt, "tier": tier})
+        self._imbue(group)
         return self._start_trainings(group, group.members)
+
+    def _imbue(self, group):
+        """Ja na cidade: cada conta compra e imbui o que estiver pendente (inclui renovar o que esta acabando)."""
+        for m in group.members:
+            try:
+                self.imbuer.work(m)
+            except Exception as error:
+                self.log(f"[{m.name}] ERRO nos imbuements: {error}")
 
     def _start_trainings(self, group, members):
         ok = True
@@ -381,9 +396,10 @@ class Engine:
             if not self._wait_all(group, "city", 15):
                 self.log(f"[{group.label}] nem todos chegaram na cidade - abortando o ciclo")
                 return False
-        # 2) vender
+        # 2) vender e imbuir
         for m in group.members:
             m.sell_all(sell["keep"], sell["mark_all"])
+        self._imbue(group)
         # 3) voltar (time: so' a lider, os outros aceitam sozinhos; solo: ela mesma)
         for attempt in (1, 2):
             starter.start_hunt(hunt, tier, team=group.is_team)
@@ -487,6 +503,12 @@ class Engine:
                 except Exception as error:
                     self.log(f"[{st.name}] nao consegui ler as opcoes de treino: {error}")
                 self._handle_dispatch(acc, st)
+                try:
+                    self.imbuer.observe(acc, st)
+                except Exception as error:
+                    self.log(f"[{st.name}] nao consegui ler os imbuements: {error}")
+        if self.imbuer.requested:
+            self.imbuer.refresh_all(self.accounts, states)
         for group in groups:
             self._handle_group(group)
 

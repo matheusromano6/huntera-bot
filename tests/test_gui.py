@@ -152,6 +152,39 @@ class GuiTests(unittest.TestCase):
         self.app._training_changed("Aliado Um", gui.DEFAULT_CHOICE)            # volta ao padrao
         self.assertNotIn("aliado um", self.saved()["training"]["by_name"])
 
+    def test_13_imbuements_tab_costs_and_plan(self):
+        from huntera_bot.memory import Memory
+        gui.MEMORY_PATH = os.path.join(self.tmp, "memory.json")
+        mem = Memory(gui.MEMORY_PATH)
+        empty = {"active": None, "minutes": None}
+        mem.set_imbue("equipment", "mr sorc", {"name": "MR SORC", "vocation": "Elder Druid", "gold": 20_000,
+                                               "items": {"vampire shield": [empty],
+                                                         "crown helmet": [{"active": "Basic Void", "minutes": 75}, empty]}})
+        mem.set_imbue("prices", "cultish robe", {"rows": [{"seller": "a", "qty": 99, "price": 151}]})
+        self.app._refresh_imbuements({}, force=True)
+        self.assertEqual(self.app.imbue_account.get(), "Mr Sorc")
+        self.assertEqual(len(self.app.imbue_rows), 3)
+        status = self.app.imbue_rows[("crown helmet", 0)][3].cget("text")
+        self.assertEqual(status, "Ativo: Basic Void · 1h 15m")
+        imb, tier, renew, _status, cost = self.app.imbue_rows[("vampire shield", 0)]
+        imb.set("Demon Presence")
+        self.app._imbue_recalc()
+        self.assertEqual(cost.cget("text"), "8.775")                 # 25 x 151 + 5.000 de taxa
+        self.assertIn("Total 8.775", self.app.imbue_summary.cget("text"))
+        self.assertNotIn("FALTAM", self.app.imbue_summary.cget("text"))
+        tier.set("Powerful")                                          # sem preco dos outros materiais
+        self.app._imbue_recalc()
+        self.assertIn("FALTAM", self.app.imbue_summary.cget("text"))   # 250 mil > 20 mil de gold
+        self.assertIn("preços ainda não lidos", self.app.imbue_summary.cget("text"))
+        tier.set("Basic")
+        renew.set(False)
+        self.app._imbue_save()
+        self.assertEqual(self.saved()["imbuements"]["plan"]["mr sorc"],
+                         {"vampire shield": [{"imbuement": "Demon Presence", "tier": "Basic", "renew": False}]})
+        imb.set(gui.imbuing.NONE)
+        self.app._imbue_save()
+        self.assertNotIn("mr sorc", self.saved()["imbuements"]["plan"])
+
     def _drain_log(self):
         """Texto do painel de log (o laco do app passa a fila pro painel)."""
         pump(self.root, 0.4)

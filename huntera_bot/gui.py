@@ -11,7 +11,7 @@ from tkinter import ttk
 
 import customtkinter as ctk
 
-from . import VERSION, catalog, config, updater
+from . import VERSION, catalog, config, imbuing, updater
 from .memory import Memory
 from .paths import app_dir, resource_dir
 from .runner import Runner
@@ -25,6 +25,16 @@ TEXT, MUTED, ACCENT, ACCENT_HOVER, DANGER, WARN = "#e6edf3", "#8b98a5", "#3fb950
 TIERS = ["(padrao do jogo)", "Cauteloso", "Ousado", "Agressivo"]
 PHASES = {"hunting": "caçando", "city": "cidade", "training": "treinando", "leaving": "saindo", "loading": "carregando", "unknown": "?"}
 MAX_LOG_LINES = 500
+
+
+def fmt_gold(value):
+    """1234567 -> '1,23 mi'; 311000 -> '311 mil'; 900 -> '900'."""
+    value = int(value or 0)
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.2f} mi".replace(".", ",")
+    if value >= 10_000:
+        return f"{round(value / 1000):d} mil"
+    return f"{value:,}".replace(",", ".")
 
 
 class App:
@@ -54,12 +64,13 @@ class App:
         self.tabs = ctk.CTkTabview(root, fg_color=PANEL, segmented_button_selected_color=ACCENT,
                                    segmented_button_selected_hover_color=ACCENT_HOVER, text_color="#04140a")
         self.tabs.pack(fill="both", expand=True, padx=14, pady=(0, 14))
-        for name in ("Contas", "Regras", "Treino", "Bestiary", "Log"):
+        for name in ("Contas", "Regras", "Treino", "Bestiary", "Imbuements", "Log"):
             self.tabs.add(name)
         self._build_accounts(self.tabs.tab("Contas"))
         self._build_rules(self.tabs.tab("Regras"))
         self._build_training(self.tabs.tab("Treino"))
         self._build_bestiary(self.tabs.tab("Bestiary"))
+        self._build_imbuements(self.tabs.tab("Imbuements"))
         self._build_log(self.tabs.tab("Log"))
 
         root.protocol("WM_DELETE_WINDOW", self.request_close)
@@ -255,6 +266,7 @@ class App:
         elif self.stop_btn.cget("state") == "normal":   # a thread caiu sozinha (erro)
             self.stop()
         self._refresh_training(snap["states"])
+        self._refresh_imbuements(snap["states"])
         self.tree.delete(*self.tree.get_children())
         for name, st in sorted(snap["states"].items()):
             group = snap["groups"].get(name, ("", False, ""))
@@ -487,6 +499,177 @@ class App:
         self.cfg["bestiary_chain"]["hunts"] = catalog.sort_chain(self._chain(), self.hunts)
         self.save()
         self._refresh_chain()
+
+    # ------------------------------------------------------------ imbuements
+    def _build_imbuements(self, tab):
+        self.imbue_catalog = imbuing.load()
+        self.imbue_rows = {}            # (item, slot) -> (imbuement, tier, renew, status, custo)
+        self.imbue_signature = None
+        self.imbue_account = tk.StringVar(value="")
+        top = ctk.CTkFrame(tab, fg_color="transparent")
+        top.pack(fill="x", padx=10, pady=(8, 2))
+        self.imbue_accounts = ctk.CTkSegmentedButton(top, values=["-"], variable=self.imbue_account,
+                                                     command=lambda _v: self._refresh_imbuements(self.runner.snapshot["states"], force=True),
+                                                     selected_color=ACCENT, selected_hover_color=ACCENT_HOVER, text_color=TEXT)
+        self.imbue_accounts.pack(side="left")
+        ctk.CTkButton(top, text="Ler contas e preços", width=150, command=self._imbue_refresh, fg_color=PANEL_ALT,
+                      hover_color=BORDER, text_color=TEXT).pack(side="right", padx=4)
+        self.imbue_tokens = tk.BooleanVar(value=bool(self.cfg["imbuements"].get("use_tokens")))
+        ctk.CTkCheckBox(top, text="Usar gold tokens quando houver", variable=self.imbue_tokens, fg_color=ACCENT, text_color=TEXT,
+                        command=self._imbue_recalc).pack(side="right", padx=10)
+        ctk.CTkLabel(tab, text="Escolha o imbuement de cada slot. O bot compra no leilão o que faltar e imbui na cidade "
+                               "(proteção automática). 'Renovar': quando acabar, sai da caçada, renova e volta.",
+                     text_color=MUTED, wraplength=860, justify="left").pack(anchor="w", padx=14, pady=(2, 4))
+        self.imbue_frame = ctk.CTkScrollableFrame(tab, fg_color=PANEL_ALT)
+        self.imbue_frame.pack(fill="both", expand=True, padx=12, pady=4)
+        bottom = ctk.CTkFrame(tab, fg_color="transparent")
+        bottom.pack(fill="x", padx=12, pady=(2, 8))
+        self.imbue_summary = ctk.CTkLabel(bottom, text="", text_color=TEXT, justify="left", anchor="w")
+        self.imbue_summary.pack(side="left")
+        ctk.CTkButton(bottom, text="Salvar plano", command=self._imbue_save, fg_color=ACCENT, hover_color=ACCENT_HOVER,
+                      text_color="#04140a").pack(side="right")
+        self.imbue_msg = ctk.CTkLabel(bottom, text="", text_color=MUTED)
+        self.imbue_msg.pack(side="right", padx=10)
+
+    def _imbue_data(self):
+        return Memory(MEMORY_PATH).imbue()
+
+    def _imbue_allowed(self, data, item):
+        """{tier: [imbuements]} que o item aceita (lido no jogo; senao o que ja foi visto; senao tudo)."""
+        allowed = data.get("items", {}).get(item) or imbuing.known_items(self.imbue_catalog).get(item)
+        return allowed or {t: sorted(self.imbue_catalog) for t in imbuing.TIERS}
+
+    def _refresh_imbuements(self, states, force=False):
+        data = self._imbue_data()
+        accounts = {k: v for k, v in data.get("equipment", {}).items() if v.get("items")}
+        names = sorted(v["name"].title() for v in accounts.values()) or ["-"]
+        if list(self.imbue_accounts.cget("values")) != names:
+            self.imbue_accounts.configure(values=names)
+        if self.imbue_account.get() not in names:
+            self.imbue_account.set(names[0])
+        key = self.imbue_account.get().casefold()
+        info = accounts.get(key) or {}
+        items = info.get("items") or {}
+        signature = (key, tuple((i, len(s)) for i, s in sorted(items.items())),
+                     tuple(sorted((i, str(self._imbue_allowed(data, i))) for i in items)))
+        if force or signature != self.imbue_signature:
+            self.imbue_signature = signature
+            self._imbue_build(key, items, data)
+        self._imbue_recalc(states=states, data=data, info=info)
+
+    def _imbue_build(self, key, items, data):
+        for child in self.imbue_frame.winfo_children():
+            child.destroy()
+        self.imbue_rows = {}
+        if not items:
+            ctk.CTkLabel(self.imbue_frame, text="Nenhuma conta lida ainda. Inicie o bot (ele lê os itens das contas) "
+                                                "ou clique em 'Ler contas e preços'.", text_color=MUTED).pack(pady=20)
+            return
+        plan = imbuing.plan_for(self.cfg, key)
+        for item, slots in sorted(items.items()):
+            allowed = self._imbue_allowed(data, item)
+            options = [imbuing.NONE] + sorted({f for fams in allowed.values() for f in fams})
+            ctk.CTkLabel(self.imbue_frame, text=f"{item}  ·  {len(slots)} slot(s)", text_color=TEXT,
+                         font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=8, pady=(8, 0))
+            entries = list(plan.get(item) or [])
+            for n in range(len(slots)):
+                entry = entries[n] if n < len(entries) and entries[n] else {}
+                row = ctk.CTkFrame(self.imbue_frame, fg_color="transparent")
+                row.pack(fill="x", padx=8, pady=2)
+                ctk.CTkLabel(row, text=f"Slot {n + 1}", text_color=MUTED, width=50, anchor="w").pack(side="left")
+                imb = tk.StringVar(value=entry.get("imbuement") if entry.get("imbuement") in options else imbuing.NONE)
+                tier = tk.StringVar(value=entry.get("tier") or imbuing.TIERS[0])
+                renew = tk.BooleanVar(value=bool(entry.get("renew", True)))
+                ctk.CTkOptionMenu(row, values=options, variable=imb, width=170, fg_color=PANEL,
+                                  command=lambda _v: self._imbue_recalc()).pack(side="left", padx=4)
+                ctk.CTkOptionMenu(row, values=imbuing.TIERS, variable=tier, width=110, fg_color=PANEL,
+                                  command=lambda _v: self._imbue_recalc()).pack(side="left", padx=4)
+                ctk.CTkCheckBox(row, text="Renovar", variable=renew, width=90, fg_color=ACCENT, text_color=TEXT,
+                                command=self._imbue_recalc).pack(side="left", padx=4)
+                status = ctk.CTkLabel(row, text="", text_color=MUTED, width=230, anchor="w")
+                status.pack(side="left", padx=4)
+                cost = ctk.CTkLabel(row, text="", text_color=TEXT, width=150, anchor="e")
+                cost.pack(side="right", padx=4)
+                self.imbue_rows[(item, n)] = (imb, tier, renew, status, cost)
+
+    def _imbue_recalc(self, states=None, data=None, info=None):
+        data = data if data is not None else self._imbue_data()
+        key = self.imbue_account.get().casefold()
+        info = info if info is not None else data.get("equipment", {}).get(key) or {}
+        items = info.get("items") or {}
+        live = next((st for name, st in (states or self.runner.snapshot["states"]).items() if name.casefold() == key), None)
+        gold = live.gold if live is not None and live.gold is not None else info.get("gold")
+        have = data.get("have", {}).get(key, {})
+        prices = {k: v.get("rows") for k, v in data.get("prices", {}).items()}
+        tokens = data.get("tokens", {}).get(key, 0) or 0
+        totals = {"fee": 0, "protection": 0, "buy_cost": 0, "total": 0}
+        warnings = set()
+        unknown = False
+        for (item, n), (imb, tier, _renew, status, cost) in self.imbue_rows.items():
+            slots = items.get(item) or []
+            slot = slots[n] if n < len(slots) else {}
+            if slot.get("active"):
+                left = slot.get("minutes")
+                status.configure(text=f"Ativo: {slot['active']}" + (f" · {left // 60}h {left % 60:02d}m" if left is not None else ""))
+            else:
+                status.configure(text="Vazio")
+            family = imb.get()
+            if family == imbuing.NONE or family not in self.imbue_catalog:
+                cost.configure(text="—", text_color=MUTED)
+                continue
+            if any(imbuing.split_active(s.get("active"))[1] == family for s in slots):
+                cost.configure(text="já ativo", text_color=MUTED)
+                continue
+            c = imbuing.entry_cost(self.imbue_catalog, family, tier.get(), have, prices, self.imbue_tokens.get(), tokens)
+            for k in totals:
+                totals[k] += c[k]
+            text = f"{fmt_gold(c['total'])}" + (" + tokens" if c["pay"] == "tokens" else "")
+            color = TEXT
+            if c["no_stock"]:
+                text, color = "sem estoque", DANGER
+                warnings.add("sem estoque no leilão: " + ", ".join(c["no_stock"]))
+            elif c["unknown"]:
+                text = "~" + text
+                unknown = True
+                warnings.add("preços ainda não lidos (clique em 'Ler contas e preços')")
+            cost.configure(text=text, text_color=color)
+        plus = " + ?" if unknown else ""
+        line = (f"Taxa {fmt_gold(totals['fee'])}  ·  Proteção (auto) {fmt_gold(totals['protection'])}  ·  "
+                f"Materiais a comprar {fmt_gold(totals['buy_cost'])}{plus}  ·  Total {fmt_gold(totals['total'])}{plus}  ·  "
+                f"Gold {fmt_gold(gold) if gold is not None else '?'}")
+        short = gold is not None and totals["total"] > gold
+        if short:
+            line += f"  ·  FALTAM {fmt_gold(totals['total'] - gold)}"
+        if warnings:
+            line += "\n" + " / ".join(sorted(warnings))
+        self.imbue_summary.configure(text=line, text_color=DANGER if short else TEXT)
+
+    def _imbue_save(self):
+        key = self.imbue_account.get().casefold()
+        if not self.imbue_rows or key in ("", "-"):
+            return
+        plan = {}
+        for (item, n), (imb, tier, renew, _status, _cost) in sorted(self.imbue_rows.items()):
+            entries = plan.setdefault(item, [])
+            family = imb.get()
+            entries.append(None if family == imbuing.NONE else {"imbuement": family, "tier": tier.get(), "renew": bool(renew.get())})
+        plan = {item: entries for item, entries in plan.items() if any(entries)}
+        settings = self.cfg["imbuements"]
+        settings["use_tokens"] = bool(self.imbue_tokens.get())
+        if plan:
+            settings.setdefault("plan", {})[key] = plan
+        else:
+            settings.setdefault("plan", {}).pop(key, None)
+        self.save()
+        chosen = sum(1 for entries in plan.values() for e in entries if e)
+        self.imbue_msg.configure(text=f"Salvo ({chosen} imbuement(s)). O bot aplica com ele rodando.", text_color=ACCENT)
+        self.log(f"imbuements de {self.imbue_account.get()}: plano salvo ({chosen})")
+
+    def _imbue_refresh(self):
+        if self.runner.request_imbue_refresh():
+            self.imbue_msg.configure(text="Lendo as contas e o leilão...", text_color=MUTED)
+        else:
+            self.imbue_msg.configure(text="Inicie o bot para ler as contas.", text_color=WARN)
 
     # ------------------------------------------------------------------- log
     def _build_log(self, tab):

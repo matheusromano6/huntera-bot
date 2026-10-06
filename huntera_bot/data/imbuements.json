@@ -1,0 +1,1313 @@
+{
+ "_fonte": "Santuario de imbuements do Huntera, lido no jogo em 2026-10-06",
+ "imbuements": [
+  {
+   "name": "Void",
+   "desc": "Converts 3% of the damage dealt into mana.",
+   "seen_on": [
+    "Zaoan helmet",
+    "crown helmet",
+    "rift bow",
+    "royal helmet",
+    "stonecutter axe",
+    "wand of voodoo",
+    "warrior helmet"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "rope belt",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "rope belt",
+       "count": 25
+      },
+      {
+       "name": "silencer claws",
+       "count": 25
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "rope belt",
+       "count": 25
+      },
+      {
+       "name": "silencer claws",
+       "count": 25
+      },
+      {
+       "name": "some grimeleech wings",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Epiphany",
+   "desc": "Raises magic level by 1.",
+   "seen_on": [
+    "wand of voodoo"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "elvish talisman",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "elvish talisman",
+       "count": 25
+      },
+      {
+       "name": "broken shamanic staff",
+       "count": 15
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "elvish talisman",
+       "count": 25
+      },
+      {
+       "name": "broken shamanic staff",
+       "count": 15
+      },
+      {
+       "name": "strand of medusa hair",
+       "count": 15
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Slash",
+   "desc": "Raises sword fighting by 1.",
+   "seen_on": [
+    "Zaoan helmet",
+    "crown helmet",
+    "royal helmet",
+    "warrior helmet"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "lion's mane",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "lion's mane",
+       "count": 25
+      },
+      {
+       "name": "mooh'tah shell",
+       "count": 25
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "lion's mane",
+       "count": 25
+      },
+      {
+       "name": "mooh'tah shell",
+       "count": 25
+      },
+      {
+       "name": "war crystal",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Chop",
+   "desc": "Raises axe fighting by 1.",
+   "seen_on": [
+    "Zaoan helmet",
+    "crown helmet",
+    "royal helmet",
+    "stonecutter axe",
+    "warrior helmet"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "orc tooth",
+       "count": 20
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "orc tooth",
+       "count": 20
+      },
+      {
+       "name": "battle stone",
+       "count": 25
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "orc tooth",
+       "count": 20
+      },
+      {
+       "name": "battle stone",
+       "count": 25
+      },
+      {
+       "name": "moohtant horn",
+       "count": 20
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Bash",
+   "desc": "Raises club fighting by 1.",
+   "seen_on": [
+    "Zaoan helmet",
+    "crown helmet",
+    "royal helmet",
+    "warrior helmet"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "cyclops toe",
+       "count": 20
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "cyclops toe",
+       "count": 20
+      },
+      {
+       "name": "ogre nose ring",
+       "count": 15
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "cyclops toe",
+       "count": 20
+      },
+      {
+       "name": "ogre nose ring",
+       "count": 15
+      },
+      {
+       "name": "warmaster's wristguards",
+       "count": 10
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Precision",
+   "desc": "Raises distance fighting by 1.",
+   "seen_on": [
+    "Zaoan helmet",
+    "crown helmet",
+    "rift bow",
+    "royal helmet",
+    "warrior helmet"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "elven scouting glass",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "elven scouting glass",
+       "count": 25
+      },
+      {
+       "name": "elven hoof",
+       "count": 20
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "elven scouting glass",
+       "count": 25
+      },
+      {
+       "name": "elven hoof",
+       "count": 20
+      },
+      {
+       "name": "metal spike",
+       "count": 10
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Blockade",
+   "desc": "Raises shielding by 1.",
+   "seen_on": [
+    "Zaoan helmet",
+    "crown helmet",
+    "rift shield",
+    "royal helmet",
+    "vampire shield",
+    "warrior helmet"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "piece of scarab shell",
+       "count": 20
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "piece of scarab shell",
+       "count": 20
+      },
+      {
+       "name": "brimstone shell",
+       "count": 25
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "piece of scarab shell",
+       "count": 20
+      },
+      {
+       "name": "brimstone shell",
+       "count": 25
+      },
+      {
+       "name": "frazzle skin",
+       "count": 25
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Scorch",
+   "desc": "Converts 10% of the physical damage to fire damage.",
+   "seen_on": [
+    "rift bow",
+    "stonecutter axe"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "fiery heart",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "fiery heart",
+       "count": 25
+      },
+      {
+       "name": "green dragon scale",
+       "count": 5
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "fiery heart",
+       "count": 25
+      },
+      {
+       "name": "green dragon scale",
+       "count": 5
+      },
+      {
+       "name": "demon horn",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Venom",
+   "desc": "Converts 10% of the physical damage to earth damage.",
+   "seen_on": [
+    "rift bow",
+    "stonecutter axe"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "swamp grass",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "swamp grass",
+       "count": 25
+      },
+      {
+       "name": "poisonous slime",
+       "count": 20
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "swamp grass",
+       "count": 25
+      },
+      {
+       "name": "poisonous slime",
+       "count": 20
+      },
+      {
+       "name": "slime heart",
+       "count": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Frost",
+   "desc": "Converts 10% of the physical damage to ice damage.",
+   "seen_on": [
+    "rift bow",
+    "stonecutter axe"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "frosty heart",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "frosty heart",
+       "count": 25
+      },
+      {
+       "name": "seacrest hair",
+       "count": 10
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "frosty heart",
+       "count": 25
+      },
+      {
+       "name": "seacrest hair",
+       "count": 10
+      },
+      {
+       "name": "polar bear paw",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Electrify",
+   "desc": "Converts 10% of the physical damage to energy damage.",
+   "seen_on": [
+    "rift bow",
+    "stonecutter axe"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "rorc feather",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "rorc feather",
+       "count": 25
+      },
+      {
+       "name": "peacock feather fan",
+       "count": 5
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "rorc feather",
+       "count": 25
+      },
+      {
+       "name": "peacock feather fan",
+       "count": 5
+      },
+      {
+       "name": "energy vein",
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Reap",
+   "desc": "Converts 10% of the physical damage to death damage.",
+   "seen_on": [
+    "rift bow",
+    "stonecutter axe"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "pile of grave earth",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "pile of grave earth",
+       "count": 25
+      },
+      {
+       "name": "demonic skeletal hand",
+       "count": 20
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "pile of grave earth",
+       "count": 25
+      },
+      {
+       "name": "demonic skeletal hand",
+       "count": 20
+      },
+      {
+       "name": "petrified scream",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Vampirism",
+   "desc": "Converts 5% of the damage dealt into hit points.",
+   "seen_on": [
+    "magic plate armor",
+    "paladin armor",
+    "rift bow",
+    "stonecutter axe",
+    "wand of voodoo"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "vampire teeth",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "vampire teeth",
+       "count": 25
+      },
+      {
+       "name": "bloody pincers",
+       "count": 15
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "vampire teeth",
+       "count": 25
+      },
+      {
+       "name": "bloody pincers",
+       "count": 15
+      },
+      {
+       "name": "piece of dead brain",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Strike",
+   "desc": "Raises critical hit damage by 15% at a 10% chance.",
+   "seen_on": [
+    "rift bow",
+    "stonecutter axe"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "protective charm",
+       "count": 20
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "protective charm",
+       "count": 20
+      },
+      {
+       "name": "sabretooth",
+       "count": 25
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "protective charm",
+       "count": 20
+      },
+      {
+       "name": "sabretooth",
+       "count": 25
+      },
+      {
+       "name": "vexclaw talon",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Lich Shroud",
+   "desc": "Reduces death damage by 2%.",
+   "seen_on": [
+    "magic plate armor",
+    "paladin armor",
+    "rift shield",
+    "vampire shield"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "flask of embalming fluid",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "flask of embalming fluid",
+       "count": 25
+      },
+      {
+       "name": "gloom wolf fur",
+       "count": 20
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "flask of embalming fluid",
+       "count": 25
+      },
+      {
+       "name": "gloom wolf fur",
+       "count": 20
+      },
+      {
+       "name": "mystical hourglass",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Snake Skin",
+   "desc": "Reduces earth damage by 3%.",
+   "seen_on": [
+    "magic plate armor",
+    "paladin armor",
+    "rift shield",
+    "vampire shield"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "piece of swampling wood",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "piece of swampling wood",
+       "count": 25
+      },
+      {
+       "name": "snake skin",
+       "count": 20
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "piece of swampling wood",
+       "count": 25
+      },
+      {
+       "name": "snake skin",
+       "count": 20
+      },
+      {
+       "name": "brimstone fangs",
+       "count": 10
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Dragon Hide",
+   "desc": "Reduces fire damage by 3%.",
+   "seen_on": [
+    "magic plate armor",
+    "paladin armor",
+    "rift shield",
+    "vampire shield"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "green dragon leather",
+       "count": 20
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "green dragon leather",
+       "count": 20
+      },
+      {
+       "name": "blazing bone",
+       "count": 10
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "green dragon leather",
+       "count": 20
+      },
+      {
+       "name": "blazing bone",
+       "count": 10
+      },
+      {
+       "name": "draken sulphur",
+       "count": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Quara Scale",
+   "desc": "Reduces ice damage by 3%.",
+   "seen_on": [
+    "magic plate armor",
+    "paladin armor",
+    "rift shield",
+    "vampire shield"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "winter wolf fur",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "winter wolf fur",
+       "count": 25
+      },
+      {
+       "name": "thick fur",
+       "count": 15
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "winter wolf fur",
+       "count": 25
+      },
+      {
+       "name": "thick fur",
+       "count": 15
+      },
+      {
+       "name": "deepling warts",
+       "count": 10
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Cloud Fabric",
+   "desc": "Reduces energy damage by 3%.",
+   "seen_on": [
+    "magic plate armor",
+    "paladin armor",
+    "rift shield",
+    "vampire shield"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "wyvern talisman",
+       "count": 20
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "wyvern talisman",
+       "count": 20
+      },
+      {
+       "name": "crawler head plating",
+       "count": 15
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "wyvern talisman",
+       "count": 20
+      },
+      {
+       "name": "crawler head plating",
+       "count": 15
+      },
+      {
+       "name": "wyrm scale",
+       "count": 10
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Demon Presence",
+   "desc": "Reduces holy damage by 3%.",
+   "seen_on": [
+    "magic plate armor",
+    "paladin armor",
+    "rift shield",
+    "vampire shield"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "cultish robe",
+       "count": 25
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "cultish robe",
+       "count": 25
+      },
+      {
+       "name": "cultish mask",
+       "count": 25
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "cultish robe",
+       "count": 25
+      },
+      {
+       "name": "cultish mask",
+       "count": 25
+      },
+      {
+       "name": "hellspawn tail",
+       "count": 20
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Swiftness",
+   "desc": "Raises walking speed by 10.",
+   "seen_on": [
+    "boots of haste",
+    "steel boots"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "damselfly wing",
+       "count": 15
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "damselfly wing",
+       "count": 15
+      },
+      {
+       "name": "compass",
+       "count": 25
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "damselfly wing",
+       "count": 15
+      },
+      {
+       "name": "compass",
+       "count": 25
+      },
+      {
+       "name": "waspoid wing",
+       "count": 20
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Featherweight",
+   "desc": "Raises carry capacity by 3%.",
+   "seen_on": [
+    "backpack"
+   ],
+   "tiers": {
+    "Basic": {
+     "gold": 5000,
+     "success_pct": 90,
+     "protection_gold": 10000,
+     "gold_tokens": 2,
+     "materials": [
+      {
+       "name": "fairy wings",
+       "count": 20
+      }
+     ]
+    },
+    "Intricate": {
+     "gold": 30000,
+     "success_pct": 70,
+     "protection_gold": 30000,
+     "gold_tokens": 4,
+     "materials": [
+      {
+       "name": "fairy wings",
+       "count": 20
+      },
+      {
+       "name": "little bowl of myrrh",
+       "count": 10
+      }
+     ]
+    },
+    "Powerful": {
+     "gold": 200000,
+     "success_pct": 50,
+     "protection_gold": 50000,
+     "gold_tokens": 6,
+     "materials": [
+      {
+       "name": "fairy wings",
+       "count": 20
+      },
+      {
+       "name": "little bowl of myrrh",
+       "count": 10
+      },
+      {
+       "name": "goosebump leather",
+       "count": 5
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

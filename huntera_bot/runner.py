@@ -39,6 +39,13 @@ class Runner:
     def stop(self):
         self.stop_event.set()
 
+    def request_imbue_refresh(self):
+        """Botao 'Ler contas e preços': o motor le no proximo ciclo (Playwright so' na thread dele)."""
+        if not (self.running and self.engine):
+            return False
+        self.engine.imbuer.requested = True
+        return True
+
     def _run(self):
         pool = Pool(self.cfg["cdp_url"], self.log)
         try:

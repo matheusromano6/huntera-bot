@@ -52,6 +52,51 @@ PARTY_NAME = ".party-name"
 PARTY_LEADER = ".party-leader"
 PARTY_FOLLOW = ".party-follow"
 
+GOLD = "#header-gold"                     # '2.044.296'
+
+# equipamento (inventario): cada slot tem data-equip (helmet, shield...) e uma bolinha por slot de imbuement
+EQUIP_SLOT = ".inventory-paperdoll .slot"
+IMBUE_PIP = ".imbuement-pip"               # classe 'filled' = imbuement ativo
+TOOLTIP = ".tooltip-card"                  # aparece ao passar o mouse: nome / ... / 'Basic Demon Presence (20 horas)'
+
+# santuario de imbuements (SO' na cidade)
+SHRINE_BTN = ".hud-city-actions .hud-imbue"
+SHRINE_ITEM = ".imbue-item"
+SHRINE_ITEM_NAME = ".imbue-item-info strong"
+SHRINE_ITEM_WHERE = ".imbue-item-where"     # 'EQUIPADO'
+SHRINE_SLOT = ".imbue-slot"                 # classe 'filled'; title 'Basic Demon Presence — resta 20h 0m'
+SHRINE_TIER = ".imbue-tier-tab"             # Basic / Intricate / Powerful
+SHRINE_LINE = ".imbue-line"                 # disabled = nivel nao permitido neste item
+SHRINE_LINE_NAME = ".imbue-offer-name"
+SHRINE_OFFER = ".imbue-dock-head strong"    # 'Basic Demon Presence'
+SHRINE_COUNTS = ".imbue-material-counts"    # 'tem/precisa' na ordem dos materiais (com tokens: '0/2')
+SHRINE_PAY = ".imbue-pay-tab"               # Sources / Tokens
+SHRINE_PROTECT = ".imbue-protect input"
+SHRINE_APPLY = ".imbue-apply"               # 'Imbuir — 5.000 gp'
+SHRINE_REMOVE = ".imbue-remove"             # 'Remover — 15.000 gp'
+SHRINE_STATUS = "#imbue-status"             # classe ok / failed
+SHRINE_CLOSE = "#imbue-close"
+PROMPT = ".text-prompt-dialog"
+PROMPT_CONFIRM = ".text-prompt-dialog .text-prompt-confirm"
+PROMPT_CANCEL = ".text-prompt-dialog .text-prompt-cancel"
+
+# loja > leilao (compra o mais barato; o item vai pro DEPOT, e o santuario conta o depot)
+STORE_NAV = "#nav-store"
+TRADE_TAB = ".trade-tab"                    # 'LEILÃO'
+TRADE_CLOSE = "#trade-close"
+MARKET_SEARCH = "#market-search"
+MARKET_ITEM = ".market-item"
+MARKET_ITEM_NAME = ".market-item-name"
+MARKET_SELL_ROWS = ".market-offers-block.sell tbody tr"   # vendedor/qtd/preço/total, ja do mais barato
+MARKET_TAKE = "button.market-take"
+MARKET_ACCEPT = ".market-accept"
+MARKET_ACCEPT_LEAD = ".market-accept-lead"      # 'Comprar de <vendedor>'
+MARKET_ACCEPT_TERMS = ".market-accept-terms"    # '151 de gold cada · 10 disponíveis'
+MARKET_AMOUNT = ".market-accept .num-field-input"
+MARKET_TOTAL = ".market-accept-total"           # 'Total: 4.998 de gold'
+MARKET_CONFIRM = ".market-accept button.market-primary"
+MARKET_DISMISS = ".market-accept .market-accept-dismiss"
+
 # Bestiary (rastreador do HUD): cabecalho 'Rat Cellars 0 / 1' = criaturas TOTALMENTE concluidas
 BESTIARY_HEAD = ".bestiary-tracker-hunt-head"
 BESTIARY_ROW = ".bestiary-tracker-row"

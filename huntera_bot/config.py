@@ -45,6 +45,15 @@ DEFAULTS = {
         "enabled": False,
         "hunts": [],          # ex: [{"name": "Rat Cellars"}, {"name": "Spider Nest", "tier": "Ousado"}]
     },
+    # imbuements (aba Imbuements): o bot compra os materiais no leilao e imbui na cidade
+    "imbuements": {
+        # gold tokens no lugar dos materiais, so' se marcado (e se a conta tiver tokens)
+        "use_tokens": False,
+        # se ja estiver na cidade por outro motivo, renova tambem o que tiver menos que isso (minutos)
+        "renew_before_minutes": 30,
+        # nome da conta (minusculas) -> item -> [{"imbuement": "Strike", "tier": "Powerful", "renew": true}, ...]
+        "plan": {},
+    },
     # 'tier' por hunt: se vazio, o jogo ja vem com o ultimo pull salvo e o bot nao mexe
     "hunt_tiers": {},         # ex: {"Vampire Crypt": "Ousado"}
     # esperas (segundos)

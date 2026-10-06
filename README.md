@@ -9,8 +9,9 @@ pip install -r requirements.txt
 python -m huntera_bot.gui          # ou duplo clique em huntera_bot.pyw
 ```
 
-Abas: **Contas** (estado ao vivo, time/solo), **Regras** (capacidade, despacho, pausas), **Bestiary** (catalogo das 75 caçadas
-na ordem de progressao do jogo; escolhe, ordena e define o pull de cada uma), **Log**. X pergunta se fecha ou guarda na bandeja; minimizar vai pra bandeja.
+Abas: **Contas** (estado ao vivo, time/solo), **Regras** (capacidade, despacho, pausas), **Treino**, **Bestiary** (catalogo das 75 caçadas
+na ordem de progressao do jogo; escolhe, ordena e define o pull de cada uma), **Imbuements** (o que imbuir em cada slot de
+cada conta, com custo total e checagem de gold), **Log**. X pergunta se fecha ou guarda na bandeja; minimizar vai pra bandeja.
 
 ## Linha de comando
 
@@ -38,6 +39,7 @@ Logs em `logs/huntera_AAAA-MM-DD.log`. Testes: `python -m unittest discover -s t
 | Parado na cidade | conta na cidade **sem treino** por mais de `idle_city_seconds` (90s) | se o time estava em treino (ou stamina baixa / hunt desconhecida) reinicia o treino online dela; senao o time volta pra ultima hunt |
 | Volta do treino | **todas** as contas treinando com stamina >= `training.resume_stamina_minutes` (600 = 10h) | cancela o treino de todas e a lider reinicia a hunt lembrada (com o time) |
 | Bestiary em cadeia | cabecalho do rastreador fecha N/N em **todas** as contas e `bestiary_chain.enabled` | vai pra proxima hunt da lista |
+| Imbuements | imbuement escolhido na aba nao esta no item (primeira vez, ou acabou com **Renovar**) e o gold cobre | o time sai, cada conta compra no leilao o que falta (das ofertas mais baratas; vai pro depot, que o santuario usa), imbui com protecao automatica e o time volta. Ja na cidade por outro motivo, renova tambem o que tiver < 30 min |
 
 Regras de seguranca: so age quando todas as contas do time estao em hunt (nunca durante carregamento ou contagem de saida),
 vende **so a mochila** (a bolsa nao aparece na venda rapida), espera cooldown depois de cada ciclo (120s ok / 600s falha),
@@ -47,12 +49,16 @@ nunca toca em paginas de outros jogos do IdleDeck.
 
 - `capacity_pct`, `dispatch`, `sell.keep` (itens que nunca marca), `hunt_tiers` (pull por hunt; vazio = usa o ultimo salvo).
 - `bestiary_chain.hunts`: ex. `[{"name": "Rat Cellars"}, {"name": "Spider Nest", "tier": "Ousado"}]`.
+- `imbuements`: `use_tokens` (gold tokens no lugar dos materiais, se a conta tiver), `renew_before_minutes` (30) e `plan`
+  (montado pela aba Imbuements).
 
 ## Estrutura
 
 - `huntera_bot/selectors.py` - todos os seletores do jogo (confirmados ao vivo). Se o HTML mudar, e so aqui.
 - `huntera_bot/account.py` - uma conta (pagina): leitura de estado e acoes.
 - `huntera_bot/engine.py` - times, decisao e ciclos.
+- `huntera_bot/imbuing.py` (catalogo `data/imbuements.json`, custos, protecao, pendencias) e `huntera_bot/imbuer.py`
+  (quando sair, comprar e imbuir).
 - `huntera_bot/idledeck.py` - conexao e descoberta das paginas.
 
 ## Fatos do jogo que o bot assume (mapeados ao vivo)

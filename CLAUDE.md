@@ -14,11 +14,12 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - `selectors.py` - TODOS os seletores do jogo (confirmados ao vivo). Se o HTML mudar, e so aqui.
 - `account.py` - uma conta: `read()` (1 evaluate -> `State`) e acoes (sair, vender, despachar, iniciar caçada, treino).
   `_click()` e o clique robusto (janelas do HUD cobrem botoes: dispara `click` direto SO' em "intercepts pointer events").
-- `engine.py` - agrupa contas em times/solo, decide (stamina > capacidade > bestiary) e executa os ciclos. `Memory` (memory.json).
+- `engine.py` - agrupa contas em times/solo, decide (stamina > imbuement > capacidade > bestiary) e executa os ciclos. `Memory` (memory.json).
+- `imbuing.py` (logica pura: catalogo, custo, protecao automatica, pendencias) + `imbuer.py` (le equipamento, decide sair, compra e imbui).
 - `idledeck.py` (conexao/descoberta), `launcher.py` (abre o IdleDeck com a porta), `updater.py` (botao Atualizar),
   `gui.py` (CustomTkinter + bandeja), `runner.py` (thread do motor), `catalog.py` + `data/hunts.json` (75 caçadas, ordem do jogo),
   `config.py` (padroes), `paths.py` (arquivos ao lado do .exe quando empacotado).
-- `tests/` (81 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
+- `tests/` (107 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
 
 ## O que o bot faz (regras)
 - **Capacidade:** QUALQUER conta do time >= `capacity_pct` -> a lider sai (leva todos, 5s) -> cada conta vende a MOCHILA (marca tudo)
@@ -53,6 +54,32 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
   "na cidade"); o botao Cancelar pode ficar coberto pela party.
 - Menus de contexto (ex: "Sair sozinho quando...") NAO fecham com Escape: clicar fora (`.context-backdrop`) ou na seta de novo.
 - Avisos do jogo: `.system-toast` (inclusive rateio de custos ao sair do time e drops globais de outros jogadores - ignorar).
+
+## Imbuements (v1.3.0)
+- Dados (22 imbuements x Basic/Intricate/Powerful, materiais, custos): `huntera_bot/data/imbuements.json`. Materiais ACUMULAM
+  (Intricate = mat1+mat2, Powerful = mat1+mat2+mat3). Taxa 5k/30k/200k, protecao +10k/+30k/+50k (-> 100%), sucesso sem
+  protecao 90/70/50% (falha consome gold+materiais). Ou pagar materiais com 2/4/6 gold tokens (5 coins cada na loja; coin ~250k gold).
+- Santuario: `.hud-city-actions .hud-imbue` (SO na cidade). Lista vem do servidor ao abrir (protocolo binario: ler o DOM).
+  `.imbue-item` (`.imbue-item-info strong` = nome) -> `.imbue-slot` (classe `filled`; title "X — resta 20h 0m") ->
+  `.imbue-tier-tab` -> `.imbue-line` (`.imbue-offer-name`; disabled = nivel nao permitido) -> dock: `.imbue-dock-head strong`,
+  `.imbue-material-counts` ("tem/precisa"; nome do material so no tooltip `.tooltip-card` ao passar o mouse), `.imbue-pay-tab`
+  (Sources/Tokens), `.imbue-protect input`, `.imbue-apply` ("Imbuir — 5.000 gp") -> dialogo `.text-prompt-dialog`
+  (`.text-prompt-confirm` "Imbuir") -> `#imbue-status` classe `ok`/`failed` ("Basic Demon Presence aplicado."). Fechar: `#imbue-close`.
+- Mesmo imbuement nao repete no item; slot ocupado so oferece Remover (custo, sem reembolso) -> renovar = esperar esvaziar.
+- Dura 20h de CAÇADA (so desconta em hunt). Sem santuario: inventario `.inventory-paperdoll .slot-imbuement-pips .imbuement-pip`
+  (classe `filled` = ativo) e tooltip do item ("Basic Demon Presence (20 horas)" / "Slot de imbuement vazio").
+- MATERIAIS DO DEPOT CONTAM no santuario (testado: comprou no leilao -> depot -> 25/25 -> imbuiu).
+- Leilao: `#nav-store` -> `.trade-tab` "LEILÃO" -> `#market-search` -> `.market-item` (`.market-item-name` exato) ->
+  `.market-offers-block.sell tbody tr` (vendedor/qtd/preço/total, JA ordenado do mais barato) -> `button.market-take` ->
+  `.market-accept` (`.market-accept-terms` "151 de gold cada · N disponíveis", `.num-field-input`, `.market-accept-total`,
+  `button.market-primary` "Confirmar compra") -> toast "Market: bought N× X for G gold. It is waiting in your depot.". Fechar: `#trade-close`.
+- Testado ao vivo (06/10, Teusin): Imbuer.work comprou 25 cultish robe em 3 ofertas, a 1a tentativa FALHOU (90% sem protecao,
+  consome tudo), comprou de novo e aplicou. Ainda NAO visto ao vivo: o fim de um imbuement (20h de caça), a saida da hunt
+  so' pra imbuir e o 'remover e renovar' (< 30 min). Tooltip abaixo de 1h: formato nao confirmado (parse aceita minutos).
+- Memory: `imbue` = items (o que cada item aceita), equipment (por conta), have, prices, tokens, done (uma vez so').
+- Decisoes do usuario: protecao AUTOMATICA (marca quando o custo esperado sem ela e' maior: Powerful sempre); tokens so se o
+  usuario marcar (ai: gold token > materiais que tem > comprar); imbuement acabou -> sair, renovar e voltar; se ja for a
+  cidade por outro motivo, renovar tambem os slots com < 30 min; checkbox "Renovar" por slot.
 
 ## IdleDeck
 - Nao expoe porta sozinho: abrir pela ATIVACAO DO PACOTE com `--remote-debugging-port=9224` (ver `launcher.py`).
