@@ -17,6 +17,29 @@ REMOVE_COST = 15_000           # 'Remover — 15.000 gp' (lido no jogo; o bot us
 NONE = "Não imbuir"
 
 
+# nomes em portugues so' para a interface (o jogo e o plano usam os nomes em ingles)
+LABELS = {
+    "Void": "Roubo de mana", "Vampirism": "Roubo de vida", "Strike": "Crítico", "Epiphany": "Magic level",
+    "Slash": "Espada", "Chop": "Machado", "Bash": "Clava", "Precision": "Distância", "Blockade": "Escudo",
+    "Scorch": "Dano de fogo", "Venom": "Dano de terra", "Frost": "Dano de gelo", "Electrify": "Dano de energia",
+    "Reap": "Dano de morte", "Lich Shroud": "Proteção morte", "Snake Skin": "Proteção terra",
+    "Dragon Hide": "Proteção fogo", "Quara Scale": "Proteção gelo", "Cloud Fabric": "Proteção energia",
+    "Demon Presence": "Proteção sagrado", "Swiftness": "Velocidade", "Featherweight": "Capacidade",
+}
+TIER_LABELS = {"Basic": "Básico", "Intricate": "Intrincado", "Powerful": "Poderoso"}
+
+
+def label(family):
+    """'Strike' -> 'Crítico (Strike)' (o nome do jogo fica entre parenteses)."""
+    return f"{LABELS[family]} ({family})" if family in LABELS else family
+
+
+def label_active(text):
+    """'Powerful Strike' -> 'Crítico Poderoso'."""
+    tier, family = split_active(text)
+    return f"{LABELS.get(family, family)} {TIER_LABELS[tier]}" if tier else text
+
+
 def load(path=PATH):
     """{nome: {'name', 'desc', 'seen_on', 'tiers': {tier: {gold, success_pct, protection_gold, gold_tokens, materials}}}}"""
     try:

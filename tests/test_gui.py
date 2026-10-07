@@ -165,18 +165,18 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(self.app.imbue_account.get(), "Mr Sorc")
         self.assertEqual(len(self.app.imbue_rows), 3)
         status = self.app.imbue_rows[("crown helmet", 0)][3].cget("text")
-        self.assertEqual(status, "Ativo: Basic Void · 1h 15m")
+        self.assertEqual(status, "Roubo de mana Básico · 1h 15m")
         imb, tier, renew, _status, cost = self.app.imbue_rows[("vampire shield", 0)]
-        imb.set("Demon Presence")
+        imb.set("Proteção sagrado (Demon Presence)")
         self.app._imbue_recalc()
         self.assertEqual(cost.cget("text"), "8.775")                 # 25 x 151 + 5.000 de taxa
         self.assertIn("Total 8.775", self.app.imbue_summary.cget("text"))
         self.assertNotIn("FALTAM", self.app.imbue_summary.cget("text"))
-        tier.set("Powerful")                                          # sem preco dos outros materiais
+        tier.set("Poderoso")                                          # sem preco dos outros materiais
         self.app._imbue_recalc()
         self.assertIn("FALTAM", self.app.imbue_summary.cget("text"))   # 250 mil > 20 mil de gold
         self.assertIn("preços ainda não lidos", self.app.imbue_summary.cget("text"))
-        tier.set("Basic")
+        tier.set("Básico")
         renew.set(False)
         self.app._imbue_save()
         self.assertEqual(self.saved()["imbuements"]["plan"]["mr sorc"],

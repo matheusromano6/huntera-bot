@@ -568,7 +568,7 @@ class App:
         plan = imbuing.plan_for(self.cfg, key)
         for item, slots in sorted(items.items()):
             allowed = self._imbue_allowed(data, item)
-            options = [imbuing.NONE] + sorted({f for fams in allowed.values() for f in fams})
+            options = [imbuing.NONE] + sorted((imbuing.label(f) for f in {f for fams in allowed.values() for f in fams}), key=str.casefold)
             ctk.CTkLabel(self.imbue_frame, text=f"{item}  ·  {len(slots)} slot(s)", text_color=TEXT,
                          font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=8, pady=(8, 0))
             entries = list(plan.get(item) or [])
@@ -577,18 +577,19 @@ class App:
                 row = ctk.CTkFrame(self.imbue_frame, fg_color="transparent")
                 row.pack(fill="x", padx=8, pady=2)
                 ctk.CTkLabel(row, text=f"Slot {n + 1}", text_color=MUTED, width=50, anchor="w").pack(side="left")
-                imb = tk.StringVar(value=entry.get("imbuement") if entry.get("imbuement") in options else imbuing.NONE)
-                tier = tk.StringVar(value=entry.get("tier") or imbuing.TIERS[0])
+                chosen = imbuing.label(entry.get("imbuement") or "")
+                imb = tk.StringVar(value=chosen if chosen in options else imbuing.NONE)
+                tier = tk.StringVar(value=imbuing.TIER_LABELS[entry.get("tier") or imbuing.TIERS[0]])
                 renew = tk.BooleanVar(value=bool(entry.get("renew", True)))
-                ctk.CTkOptionMenu(row, values=options, variable=imb, width=170, fg_color=PANEL,
+                ctk.CTkOptionMenu(row, values=options, variable=imb, width=250, fg_color=PANEL,
                                   command=lambda _v: self._imbue_recalc()).pack(side="left", padx=4)
-                ctk.CTkOptionMenu(row, values=imbuing.TIERS, variable=tier, width=110, fg_color=PANEL,
+                ctk.CTkOptionMenu(row, values=list(imbuing.TIER_LABELS.values()), variable=tier, width=110, fg_color=PANEL,
                                   command=lambda _v: self._imbue_recalc()).pack(side="left", padx=4)
                 ctk.CTkCheckBox(row, text="Renovar", variable=renew, width=90, fg_color=ACCENT, text_color=TEXT,
                                 command=self._imbue_recalc).pack(side="left", padx=4)
-                status = ctk.CTkLabel(row, text="", text_color=MUTED, width=230, anchor="w")
+                status = ctk.CTkLabel(row, text="", text_color=MUTED, width=215, anchor="w")
                 status.pack(side="left", padx=4)
-                cost = ctk.CTkLabel(row, text="", text_color=TEXT, width=150, anchor="e")
+                cost = ctk.CTkLabel(row, text="", text_color=TEXT, width=120, anchor="e")
                 cost.pack(side="right", padx=4)
                 self.imbue_rows[(item, n)] = (imb, tier, renew, status, cost)
 
@@ -610,17 +611,17 @@ class App:
             slot = slots[n] if n < len(slots) else {}
             if slot.get("active"):
                 left = slot.get("minutes")
-                status.configure(text=f"Ativo: {slot['active']}" + (f" · {left // 60}h {left % 60:02d}m" if left is not None else ""))
+                status.configure(text=f"{imbuing.label_active(slot['active'])}" + (f" · {left // 60}h {left % 60:02d}m" if left is not None else ""))
             else:
                 status.configure(text="Vazio")
-            family = imb.get()
-            if family == imbuing.NONE or family not in self.imbue_catalog:
+            family = self._imbue_family(imb.get())
+            if family not in self.imbue_catalog:
                 cost.configure(text="—", text_color=MUTED)
                 continue
             if any(imbuing.split_active(s.get("active"))[1] == family for s in slots):
                 cost.configure(text="já ativo", text_color=MUTED)
                 continue
-            c = imbuing.entry_cost(self.imbue_catalog, family, tier.get(), have, prices, self.imbue_tokens.get(), tokens)
+            c = imbuing.entry_cost(self.imbue_catalog, family, self._imbue_tier(tier.get()), have, prices, self.imbue_tokens.get(), tokens)
             for k in totals:
                 totals[k] += c[k]
             text = f"{fmt_gold(c['total'])}" + (" + tokens" if c["pay"] == "tokens" else "")
@@ -644,6 +645,15 @@ class App:
             line += "\n" + " / ".join(sorted(warnings))
         self.imbue_summary.configure(text=line, text_color=DANGER if short else TEXT)
 
+    @staticmethod
+    def _imbue_family(shown):
+        """'Crítico (Strike)' -> 'Strike'."""
+        return shown.rsplit("(", 1)[-1].rstrip(")") if shown.endswith(")") else shown
+
+    @staticmethod
+    def _imbue_tier(shown):
+        return next((t for t, pt in imbuing.TIER_LABELS.items() if pt == shown), shown)
+
     def _imbue_save(self):
         key = self.imbue_account.get().casefold()
         if not self.imbue_rows or key in ("", "-"):
@@ -651,8 +661,9 @@ class App:
         plan = {}
         for (item, n), (imb, tier, renew, _status, _cost) in sorted(self.imbue_rows.items()):
             entries = plan.setdefault(item, [])
-            family = imb.get()
-            entries.append(None if family == imbuing.NONE else {"imbuement": family, "tier": tier.get(), "renew": bool(renew.get())})
+            family = self._imbue_family(imb.get())
+            entries.append(None if family not in self.imbue_catalog else
+                           {"imbuement": family, "tier": self._imbue_tier(tier.get()), "renew": bool(renew.get())})
         plan = {item: entries for item, entries in plan.items() if any(entries)}
         settings = self.cfg["imbuements"]
         settings["use_tokens"] = bool(self.imbue_tokens.get())
