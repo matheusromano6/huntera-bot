@@ -19,7 +19,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - `idledeck.py` (conexao/descoberta), `launcher.py` (abre o IdleDeck com a porta), `updater.py` (botao Atualizar),
   `gui.py` (CustomTkinter + bandeja), `runner.py` (thread do motor), `catalog.py` + `data/hunts.json` (75 caçadas, ordem do jogo),
   `config.py` (padroes), `paths.py` (arquivos ao lado do .exe quando empacotado).
-- `tests/` (107 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
+- `tests/` (108 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
 
 ## O que o bot faz (regras)
 - **Capacidade:** QUALQUER conta do time >= `capacity_pct` -> a lider sai (leva todos, 5s) -> cada conta vende a MOCHILA (marca tudo)
@@ -76,6 +76,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - Testado ao vivo (06/10, Teusin): Imbuer.work comprou 25 cultish robe em 3 ofertas, a 1a tentativa FALHOU (90% sem protecao,
   consome tudo), comprou de novo e aplicou. Ainda NAO visto ao vivo: o fim de um imbuement (20h de caça), a saida da hunt
   so' pra imbuir e o 'remover e renovar' (< 30 min). Tooltip abaixo de 1h: formato nao confirmado (parse aceita minutos).
+- v1.3.1: conta na cidade OU TREINANDO com imbuement pendente imbui na hora (santuario abre no treino, testado; nao cancela o treino).
 - Memory: `imbue` = items (o que cada item aceita), equipment (por conta), have, prices, tokens, done (uma vez so').
 - Decisoes do usuario: protecao AUTOMATICA (marca quando o custo esperado sem ela e' maior: Powerful sempre); tokens so se o
   usuario marcar (ai: gold token > materiais que tem > comprar); imbuement acabou -> sair, renovar e voltar; se ja for a

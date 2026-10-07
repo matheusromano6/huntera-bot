@@ -419,6 +419,17 @@ class Engine:
             current = next((s.hunt_name for s in group.states.values() if s.hunt_name), "")
             if current:
                 self.last_hunt[group.key] = (current, self.cfg["hunt_tiers"].get(current))
+        waiting = [m for m in group.members if m.name in group.states
+                   and group.states[m.name].phase in ("city", "training") and self.imbuer.tasks(m.name)]
+        if waiting:              # ja na cidade/treinando com imbuement pendente: imbui agora (sem cancelar o treino)
+            for m in waiting:
+                self.log(f"[{m.name}] imbuement pendente na cidade/treino: imbuindo agora")
+                try:
+                    self.imbuer.work(m)
+                except Exception as error:
+                    self.log(f"[{m.name}] ERRO nos imbuements: {error}")
+            self.cooldown[group.key] = self.clock() + 60
+            return
         resume = self.decide_resume(group)
         if resume:
             try:

@@ -181,6 +181,14 @@ class ImbuerTests(unittest.TestCase):
         self.assertEqual(kinds(world, "shrine"), [])
         self.assertEqual(kinds(world, "imbue"), [])
 
+    def test_training_account_imbues_right_away_without_leaving_training(self):
+        world, acc, engine, clock, logs = setup(phase="training")
+        engine.tick()
+        self.assertEqual(len(kinds(world, "imbue")), 1)
+        self.assertEqual(kinds(world, "cancel"), [])
+        self.assertEqual(kinds(world, "leave"), [])
+        self.assertEqual(acc.state.phase, "training")
+
     def test_active_with_time_left_does_not_trigger(self):
         items = {"vampire shield": [{"active": "Basic Demon Presence", "minutes": 20}]}
         world, acc, engine, clock, logs = setup(items=items)
