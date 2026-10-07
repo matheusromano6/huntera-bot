@@ -226,10 +226,10 @@ class Engine:
             return ("training", "stamina baixa: " + ", ".join(low), current, None)
         imbue = self.imbuer.exit_reason(group)
         if imbue:                    # imbuement planejado faltando (primeira vez ou acabou com 'Renovar')
-            return ("cycle", imbue, current, self.cfg["hunt_tiers"].get(current))
+            return ("cycle", imbue, current, self._tier(group, current))
         full = self._capacity_trigger(group)
         if full:
-            return ("cycle", "capacidade: " + ", ".join(full), current, self.cfg["hunt_tiers"].get(current))
+            return ("cycle", "capacidade: " + ", ".join(full), current, self._tier(group, current))
         tracked = [s for s in states if s.bestiary_total]   # quem nao mostra o rastreador nao conta
         if tracked and all(s.bestiary_complete for s in tracked):
             nxt = self._chain_next(current)
@@ -276,7 +276,7 @@ class Engine:
         hunt = self.group_hunt(group)      # sem memoria (time mudou/bot reaberto): a hunt que as contas mostram
         if hunt:
             self.log(f"[{group.label}] sem hunt na memoria - usando a que aparece no jogo: '{hunt}'")
-            return hunt, self.cfg["hunt_tiers"].get(hunt)
+            return hunt, self._tier(group, hunt)
         self._warn(("noresume", group.key), f"[{group.label}] stamina ok, mas nao sei em qual hunt voltar (sem memoria)")
         return None
 
@@ -358,7 +358,7 @@ class Engine:
         known = (saved["hunt"], saved.get("tier")) if saved else self._last_hunt(group)
         if not known:
             current = next((s.hunt_name for s in states.values() if s.hunt_name), "")
-            known = (current, self.cfg["hunt_tiers"].get(current)) if current else None
+            known = (current, self._tier(group, current)) if current else None
         stam = [s.stamina_min for s in states.values()]
         low = tr.get("enabled") and any(v is not None and v <= tr["stamina_minutes"] for v in stam)
         if tr.get("enabled") and (saved or low or not known):
@@ -419,8 +419,9 @@ class Engine:
         if all(s.phase == "hunting" for s in group.states.values()):
             current = next((s.hunt_name for s in group.states.values() if s.hunt_name), "")
             if current:
-                self.last_hunt[group.key] = (current, self.cfg["hunt_tiers"].get(current))
-                self.memory.set_last_hunt(group.key, current, self.cfg["hunt_tiers"].get(current))
+                tier = self._tier(group, current)
+                self.last_hunt[group.key] = (current, tier)
+                self.memory.set_last_hunt(group.key, current, tier)
         waiting = [m for m in group.members if m.name in group.states
                    and group.states[m.name].phase in ("city", "training") and self.imbuer.tasks(m.name)]
         if waiting:              # ja na cidade/treinando com imbuement pendente: imbui agora (sem cancelar o treino)
@@ -457,7 +458,7 @@ class Engine:
         kind, reason, hunt, tier = decision
         if kind == "training":
             try:
-                ok = self.run_training(group, reason, hunt, self.cfg["hunt_tiers"].get(hunt))
+                ok = self.run_training(group, reason, hunt, self._tier(group, hunt))
             except Exception as error:
                 self.log(f"[{group.label}] ERRO no treino: {error}")
                 ok = False
@@ -478,6 +479,29 @@ class Engine:
             ok = False
         wait = self.cfg["cooldown_ok_seconds"] if ok else self.cfg["cooldown_fail_seconds"]
         self.cooldown[group.key] = self.clock() + wait
+
+    def _tier(self, group, hunt):
+        """Pull pra voltar a 'hunt': o configurado (hunt_tiers) > o que a lider esta usando (lido da janela de
+        caçada) > o gravado com a ultima caçada. None = deixa o que o jogo mostrar."""
+        if not hunt:
+            return None
+        fixed = self.cfg["hunt_tiers"].get(hunt)
+        if fixed:
+            return fixed
+        states = group.states
+        leader = group.leader.name if group.leader else None
+        ordered = sorted(states.values(), key=lambda s: s.name != leader)     # a lider primeiro
+        seen = next((s.pull_tier for s in ordered if s.pull_tier and s.pull_hunt.casefold() == hunt.casefold()), None)
+        if seen:
+            return seen
+        for last in (self.last_hunt.get(group.key), self._saved_last(group)):
+            if last and last[0] == hunt and last[1]:
+                return last[1]
+        return None
+
+    def _saved_last(self, group):
+        saved = self.memory.get_last_hunt(group.key)
+        return (saved["hunt"], saved.get("tier")) if saved else None
 
     def _last_hunt(self, group):
         """Ultima caçada do time: a desta execucao ou a gravada no memory.json (sobrevive ao server save)."""

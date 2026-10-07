@@ -28,6 +28,7 @@ ORGANIZE = "#hunt-organize"
 HUNT_WINDOW = ".hunt-window"
 HUNT_ENTRY = 'button.hunt-entry[aria-label="Ver detalhes de {name}"]'
 HUNT_TIER = ".hunt-tier"                  # o escolhido tem a classe 'selected'
+HUNT_DETAIL = ".hunt-detail"              # detalhe da caçada escolhida (1o titulo = nome); no LIDER guarda a caçada atual e o pull
 START_SOLO = "#hunt-start"                # so' existe/visivel FORA de party
 START_TEAM = "#hunt-start-team"           # lider em party; todos precisam estar na cidade
 HUNT_CLOSE = "#hunt-close"

@@ -161,7 +161,41 @@ class ServerSaveTests(unittest.TestCase):
         memory = Memory()
         engine, clock, logs = engine_for(w, memory=memory)
         engine.tick()
-        self.assertEqual(memory.get_last_hunt([a.name for a in w.accounts.values()]), {"hunt": "Spider Nest", "tier": None})
+        self.assertEqual(memory.get_last_hunt([a.name for a in w.accounts.values()])["hunt"], "Spider Nest")
+
+
+class PullTests(unittest.TestCase):
+    def _team(self):
+        w = world_after_server_save(phase="hunting")
+        for acc in w.accounts.values():
+            acc.state.hunt_name = "Spider Nest"
+            acc.state.party_names = list(NAMES)
+            acc.state.leader_name = "Aliado Um"
+        lider = w.accounts["ALIADO UM"].state
+        lider.pull_hunt, lider.pull_tier = "Spider Nest", "Agressivo"
+        return w
+
+    def test_selling_cycle_returns_with_the_pull_the_leader_was_using(self):
+        w = self._team()
+        w.accounts["ALIADO DOIS"].state.cap_pct = 95.0
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.tick()
+        self.assertEqual(kinds(w, "start")[0][2:4], ("Spider Nest", "Agressivo"))
+
+    def test_pull_is_saved_with_the_last_hunt(self):
+        w = self._team()
+        memory = Memory()
+        engine, clock, logs = engine_for(w, memory=memory, enabled=False)
+        engine.tick()
+        self.assertEqual(memory.get_last_hunt([a.name for a in w.accounts.values()]), {"hunt": "Spider Nest", "tier": "Agressivo"})
+
+    def test_configured_pull_wins(self):
+        w = self._team()
+        w.accounts["ALIADO DOIS"].state.cap_pct = 95.0
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.cfg["hunt_tiers"]["Spider Nest"] = "Ousado"
+        engine.tick()
+        self.assertEqual(kinds(w, "start")[0][3], "Ousado")
 
 
 if __name__ == "__main__":

@@ -35,6 +35,8 @@ READ_JS = """(S) => {
     party: members,
     toasts: Array.from(document.querySelectorAll(S.TOAST)).filter(vis).map(txt),
     gold: txt(q(S.GOLD)),
+    pull: (() => { const t = q(S.HUNT_TIER + '.selected strong'), d = q(S.HUNT_DETAIL);
+      return t ? {hunt: txt(d && d.querySelector('h2, h3, strong')), tier: txt(t)} : null; })(),
     select: !!q(S.CHAR_PLAY), play_ready: !!q(S.CHAR_PLAY) && !q(S.CHAR_PLAY).disabled,
     select_name: txt(q(S.CHAR_NAME)), notice: txt(q(S.CHAR_NOTICE)), motd: vis(q(S.MOTD)),
     invite: Array.from(document.querySelectorAll(S.PARTY_INVITE_BTN)).filter(vis).map(txt),
@@ -92,6 +94,8 @@ class State:
     leader_name: str = ""
     toasts: list = field(default_factory=list)
     gold: int | None = None
+    pull_hunt: str = ""             # caçada aberta por ultimo na janela de caçada (fica no HTML mesmo fechada)
+    pull_tier: str = ""             # pull marcado nela (Cauteloso / Ousado / Agressivo)
     play_ready: bool = False        # tela de personagens com o Jogar habilitado (o jogo voltou)
     notice: str = ""                # aviso da tela de personagens ('Server save...')
     motd: bool = False              # 'PATCH NOTES' aberto depois de entrar
@@ -147,6 +151,8 @@ def parse_state(raw):
     st.leader_name = next((p["name"] for p in party if p.get("leader")), "")
     st.toasts = raw.get("toasts") or []
     st.gold = imbuing.number(raw.get("gold"))
+    pull = raw.get("pull") or {}
+    st.pull_hunt, st.pull_tier = pull.get("hunt") or "", pull.get("tier") or ""
     st.motd = bool(raw.get("motd"))
     st.invite = raw.get("invite") or []
     switch = (raw.get("follow_switch") or "").casefold()
