@@ -41,7 +41,7 @@ class App:
     def __init__(self, root, runner_factory=Runner):
         self.root = root
         root.title(f"HUNTERA BOT  v{VERSION}")
-        root.geometry("920x680")
+        root.geometry("920x740")
         root.configure(fg_color=BG)
         icon = os.path.join(resource_dir(), "icon.ico")
         if os.path.exists(icon):
@@ -267,6 +267,7 @@ class App:
             self.stop()
         self._refresh_training(snap["states"])
         self._refresh_imbuements(snap["states"])
+        self._refresh_party(snap["states"])
         self.tree.delete(*self.tree.get_children())
         for name, st in sorted(snap["states"].items()):
             group = snap["groups"].get(name, ("", False, ""))
@@ -287,7 +288,7 @@ class App:
         self.rule_vars = {}
 
         def row(r, label, key, sub=None, hint=""):
-            ctk.CTkLabel(grid, text=label, text_color=TEXT).grid(row=r, column=0, sticky="w", pady=6, padx=(0, 14))
+            ctk.CTkLabel(grid, text=label, text_color=TEXT).grid(row=r, column=0, sticky="w", pady=4, padx=(0, 14))
             value = self.cfg[key] if sub is None else self.cfg[key][sub]
             var = tk.StringVar(value=str(value))
             ctk.CTkEntry(grid, textvariable=var, width=90, fg_color=PANEL_ALT).grid(row=r, column=1, sticky="w")
@@ -304,12 +305,98 @@ class App:
         self.training_var = tk.BooleanVar(value=self.cfg["training"]["enabled"])
         ctk.CTkCheckBox(grid, text="Mandar o time pro treino quando a stamina acabar", variable=self.training_var, fg_color=ACCENT,
                         text_color=TEXT).grid(row=6, column=0, columnspan=3, sticky="w", pady=6)
-        ctk.CTkButton(grid, text="Salvar regras", command=self._save_rules, fg_color=ACCENT, hover_color=ACCENT_HOVER, text_color="#04140a").grid(row=7, column=0, sticky="w", pady=16)
+        ctk.CTkButton(grid, text="Salvar regras", command=self._save_rules, fg_color=ACCENT, hover_color=ACCENT_HOVER, text_color="#04140a").grid(row=7, column=0, sticky="w", pady=10)
         self.rules_msg = ctk.CTkLabel(grid, text="", text_color=MUTED)
         self.rules_msg.grid(row=7, column=1, columnspan=2, sticky="w")
         ctk.CTkLabel(tab, text="O bot vende TUDO o que estiver na mochila (a bolsa não entra). Proteja antes o que quiser guardar. "
                                "No treino: Knight = Axe Fighting, Paladin = Distance Fighting, Druid/Sorcerer = Magic Level.",
                      text_color=MUTED, wraplength=840, justify="left").pack(anchor="w", padx=14)
+        self._build_party(tab)
+
+    # ----------------------------------------------------------------- party
+    def _build_party(self, tab):
+        box = ctk.CTkFrame(tab, fg_color=PANEL_ALT)
+        box.pack(fill="x", padx=12, pady=(14, 8))
+        party = self.cfg["party"]
+        self.party_enabled = tk.BooleanVar(value=bool(party.get("enabled")))
+        ctk.CTkCheckBox(box, text="Montar a party sozinho (volta do server save ou alguém fora da party)",
+                        variable=self.party_enabled, command=self._party_changed, fg_color=ACCENT, text_color=TEXT
+                        ).pack(anchor="w", padx=10, pady=(10, 4))
+        ctk.CTkLabel(box, text="O líder (★) convida pelos amigos; os membros entram com 'aceitar tudo do líder' e seguem o líder. "
+                               "Depois o time volta a treinar ou para a última caçada.",
+                     text_color=MUTED, wraplength=820, justify="left").pack(anchor="w", padx=10)
+        row = ctk.CTkFrame(box, fg_color="transparent")
+        row.pack(fill="x", padx=10, pady=6)
+        ctk.CTkLabel(row, text="★ Líder:", text_color=TEXT).pack(side="left")
+        self.party_leader = tk.StringVar(value="")
+        self.party_leader_menu = ctk.CTkOptionMenu(row, values=["-"], variable=self.party_leader, width=200, fg_color=PANEL,
+                                                   command=lambda _v: self._party_changed(rebuild=True))
+        self.party_leader_menu.pack(side="left", padx=8)
+        self.party_costs = tk.BooleanVar(value=bool(party.get("share_costs", True)))
+        ctk.CTkCheckBox(row, text="Ratear custos da hunt", variable=self.party_costs, command=self._party_changed,
+                        fg_color=ACCENT, text_color=TEXT).pack(side="left", padx=16)
+        self.party_members_frame = ctk.CTkFrame(box, fg_color="transparent")
+        self.party_members_frame.pack(fill="x", padx=10, pady=(0, 10))
+        self.party_member_vars = {}
+        self.party_names = None
+        self._refresh_party({})
+
+    def _party_accounts(self, states):
+        """{minusculas: 'Nome'} das contas ja vistas (memoria) + as ao vivo."""
+        out = {}
+        mem = Memory(MEMORY_PATH)
+        for info in mem.all_options().values():
+            out[info["name"].casefold()] = info["name"].title()
+        for info in (mem.imbue().get("equipment") or {}).values():
+            out[info["name"].casefold()] = info["name"].title()
+        for name in states:
+            out[name.casefold()] = name.title()
+        party = self.cfg["party"]
+        for name in [party.get("leader")] + list(party.get("members") or []):
+            if name:
+                out.setdefault(name.casefold(), name.title())
+        return out
+
+    def _refresh_party(self, states, force=False):
+        accounts = self._party_accounts(states)
+        party = self.cfg["party"]
+        leader = (party.get("leader") or "").casefold()
+        signature = (tuple(sorted(accounts)), leader)
+        if signature == self.party_names and not force:
+            return
+        self.party_names = signature
+        self.party_accounts = accounts
+        names = [accounts[k] for k in sorted(accounts)] or ["-"]
+        self.party_leader_menu.configure(values=names)
+        self.party_leader.set(accounts.get(leader, "-"))
+        for child in self.party_members_frame.winfo_children():
+            child.destroy()
+        self.party_member_vars = {}
+        if not accounts:
+            ctk.CTkLabel(self.party_members_frame, text="Nenhuma conta vista ainda. Inicie o bot com as contas abertas.",
+                         text_color=MUTED).pack(anchor="w")
+            return
+        ctk.CTkLabel(self.party_members_frame, text="Membros:", text_color=TEXT).pack(side="left", padx=(0, 8))
+        members = {m.casefold() for m in party.get("members") or []}
+        for key in sorted(accounts):
+            if key == leader:
+                continue
+            var = tk.BooleanVar(value=key in members)
+            ctk.CTkCheckBox(self.party_members_frame, text=accounts[key], variable=var, command=self._party_changed,
+                            fg_color=ACCENT, text_color=TEXT).pack(side="left", padx=6)
+            self.party_member_vars[key] = var
+
+    def _party_changed(self, rebuild=False):
+        party = self.cfg["party"]
+        leader = next((k for k, v in self.party_accounts.items() if v == self.party_leader.get()), "")
+        party["enabled"] = bool(self.party_enabled.get())
+        party["leader"] = leader
+        party["members"] = sorted(k for k, var in self.party_member_vars.items() if var.get() and k != leader)
+        party["share_costs"] = bool(self.party_costs.get())
+        self.save()
+        if rebuild:
+            self._refresh_party(self.runner.snapshot["states"], force=True)
+        self.log(f"party: {'ligada' if party['enabled'] else 'desligada'} - líder {leader or '-'}, membros {', '.join(party['members']) or '-'}")
 
     def _save_rules(self):
         try:

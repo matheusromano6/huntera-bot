@@ -45,6 +45,14 @@ DEFAULTS = {
         "enabled": False,
         "hunts": [],          # ex: [{"name": "Rat Cellars"}, {"name": "Spider Nest", "tier": "Ousado"}]
     },
+    # party montada pelo bot (volta do server save / alguem fora): o lider convida pelos amigos,
+    # os membros entram com 'aceitar tudo do lider' e seguem o lider; o lider rateia os custos
+    "party": {
+        "enabled": False,
+        "leader": "",          # nome da conta lider (minusculas)
+        "members": [],         # nomes das contas convidadas (minusculas)
+        "share_costs": True,
+    },
     # imbuements (aba Imbuements): o bot compra os materiais no leilao e imbui na cidade
     "imbuements": {
         # gold tokens no lugar dos materiais, so' se marcado (e se a conta tiver tokens)

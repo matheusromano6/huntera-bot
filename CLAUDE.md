@@ -19,7 +19,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - `idledeck.py` (conexao/descoberta), `launcher.py` (abre o IdleDeck com a porta), `updater.py` (botao Atualizar),
   `gui.py` (CustomTkinter + bandeja), `runner.py` (thread do motor), `catalog.py` + `data/hunts.json` (75 caçadas, ordem do jogo),
   `config.py` (padroes), `paths.py` (arquivos ao lado do .exe quando empacotado).
-- `tests/` (109 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
+- `tests/` (117 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
 
 ## O que o bot faz (regras)
 - **Capacidade:** QUALQUER conta do time >= `capacity_pct` -> a lider sai (leva todos, 5s) -> cada conta vende a MOCHILA (marca tudo)
@@ -82,6 +82,17 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - Decisoes do usuario: protecao AUTOMATICA (marca quando o custo esperado sem ela e' maior: Powerful sempre); tokens so se o
   usuario marcar (ai: gold token > materiais que tem > comprar); imbuement acabou -> sair, renovar e voltar; se ja for a
   cidade por outro motivo, renovar tambem os slots com < 30 min; checkbox "Renovar" por slot.
+
+## Server save e party (v1.4.0)
+- Todo dia ~12h (1 min a 1h): a pagina vai pra `/characters`; `.door-notice` "Server save..." + previsao (NAO confiavel: mudou de
+  12:20 pra 12:44 e voltou 12:22). Quando volta o aviso troca sozinho ("O jogo voltou...") e `CHAR_PLAY` habilita (sem recarregar).
+  Jogar -> cidade em ~6s (sem ENTERING WORLD). Depois aparece `.motd-gate` "PATCH NOTES" -> botao "Fechar". A PARTY SE DESFAZ.
+- Party pelos amigos (testado ao vivo, ver selectors.py): lider `#nav-friends` (abre E fecha: so clicar fechada) -> botao direito
+  em `.friends-entry` -> "Convidar para a party". Convidado: "ENTRAR E ACEITAR TUDO" (mesmo mundo) OU "CONVITE PARA SE JUNTAR -
+  esta em outro mundo" -> "ENTRAR" (carrega e o TREINO CAI) -> "SEGUIR O LÍDER" -> `.party-follow-switch` "Aceitar tudo do líder".
+  Lider: `.party-costs-offer` "Ratear custos da hunt" -> `.party-costs-state` "Rateio ligado". No lider o switch aparece desligado (normal).
+- Engine._party: so com o lider na cidade/treino; enquanto monta, o time nao treina/caça separado. Ultima caçada gravada em
+  memory.json (`last_hunt`); volta: treino (se estava treinando) > ultima caçada (stamina ok) > treino.
 
 ## IdleDeck
 - Nao expoe porta sozinho: abrir pela ATIVACAO DO PACOTE com `--remote-debugging-port=9224` (ver `launcher.py`).

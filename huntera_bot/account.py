@@ -35,6 +35,10 @@ READ_JS = """(S) => {
     party: members,
     toasts: Array.from(document.querySelectorAll(S.TOAST)).filter(vis).map(txt),
     gold: txt(q(S.GOLD)),
+    select: !!q(S.CHAR_PLAY), play_ready: !!q(S.CHAR_PLAY) && !q(S.CHAR_PLAY).disabled,
+    select_name: txt(q(S.CHAR_NAME)), notice: txt(q(S.CHAR_NOTICE)), motd: vis(q(S.MOTD)),
+    invite: Array.from(document.querySelectorAll(S.PARTY_INVITE_BTN)).filter(vis).map(txt),
+    follow_switch: txt(q(S.PARTY_SWITCH)), costs: txt(q(S.PARTY_COSTS_STATE)),
     pips: Array.from(document.querySelectorAll(S.EQUIP_SLOT)).map(s => ({
       equip: s.getAttribute('data-equip') || '', total: s.querySelectorAll(S.IMBUE_PIP).length,
       filled: s.querySelectorAll(S.IMBUE_PIP + '.filled').length})).filter(p => p.total > 0),
@@ -88,6 +92,12 @@ class State:
     leader_name: str = ""
     toasts: list = field(default_factory=list)
     gold: int | None = None
+    play_ready: bool = False        # tela de personagens com o Jogar habilitado (o jogo voltou)
+    notice: str = ""                # aviso da tela de personagens ('Server save...')
+    motd: bool = False              # 'PATCH NOTES' aberto depois de entrar
+    invite: list = field(default_factory=list)   # botoes do cartao de party na tela
+    accept_all: bool | None = None  # 'aceitar tudo do lider' ligado? (None = sem party)
+    costs_shared: bool | None = None
     imbue_pips: list = field(default_factory=list)   # [(equip, slots, ativos)] - muda quando um imbuement entra/acaba
 
     @property
@@ -98,6 +108,12 @@ class State:
 def parse_state(raw):
     """Converte o que a pagina devolveu em State (separado pra testar sem jogo)."""
     st = State(name=raw.get("name", ""), vocation=raw.get("vocation", ""))
+    if raw.get("select"):           # fora do jogo: tela de personagens (server save ou caiu)
+        st.phase = "select"
+        st.name = st.name or (raw.get("select_name") or "").upper()   # igual ao cabecalho do jogo
+        st.play_ready = bool(raw.get("play_ready"))
+        st.notice = raw.get("notice") or ""
+        return st
     if raw.get("loading"):
         st.phase = "loading"
     elif raw.get("leaving"):
@@ -131,6 +147,12 @@ def parse_state(raw):
     st.leader_name = next((p["name"] for p in party if p.get("leader")), "")
     st.toasts = raw.get("toasts") or []
     st.gold = imbuing.number(raw.get("gold"))
+    st.motd = bool(raw.get("motd"))
+    st.invite = raw.get("invite") or []
+    switch = (raw.get("follow_switch") or "").casefold()
+    st.accept_all = None if not switch else switch.startswith("parar")
+    costs = (raw.get("costs") or "").casefold()
+    st.costs_shared = None if not costs else costs.startswith("rateio ligado")
     st.imbue_pips = [(p["equip"], p["total"], p["filled"]) for p in raw.get("pips") or []]
     return st
 
@@ -394,6 +416,94 @@ class Account:
         if ok:
             self.log(f"[{self.name}] treino cancelado")
         return ok
+
+    # ------------------------------------------------------- volta / party
+    def play(self, timeout=60):
+        """Tela de personagens com o Jogar habilitado: entra. True quando o jogo carregou (cidade/caçada)."""
+        self._click(S.CHAR_PLAY, 4000)
+        return self._wait(lambda: self.read().phase in ("city", "training", "hunting"), timeout, 1.0)
+
+    def close_motd(self):
+        """'PATCH NOTES' depois de entrar: Fechar."""
+        if self._visible(S.MOTD):
+            self._click(self.page.locator(S.MOTD_CLOSE).filter(has_text="Fechar").first)
+            time.sleep(0.5)
+
+    def invite_to_party(self, names):
+        """LIDER: Amigos -> botao direito em cada nome -> 'Convidar para a party'. Retorna os convidados."""
+        done = []
+        try:
+            if not self._visible(S.FRIENDS_WINDOW):          # o botao abre E fecha a lista
+                self._click(S.FRIENDS_NAV, 3000)
+                if not self._wait(lambda: self._visible(S.FRIENDS_WINDOW), 5):
+                    raise GameError("a lista de amigos nao abriu")
+                time.sleep(0.6)
+            for name in names:
+                entry = self.page.locator(S.FRIENDS_ENTRY).filter(
+                    has=self.page.locator(S.FRIENDS_NAME).filter(has_text=re.compile(rf"^{re.escape(name)}\b", re.I)))
+                if entry.count() == 0:
+                    self.log(f"[{self.name}] {name} nao esta na lista de amigos (ou esta offline)")
+                    continue
+                entry.first.click(button="right", timeout=3000)
+                item = self.page.locator(S.FRIENDS_MENU_ITEM).filter(has_text="Convidar para a party")
+                if not self._wait(lambda: item.count() > 0, 3):
+                    self._click(".context-backdrop", 2000)        # menu de contexto nao fecha com Escape
+                    continue
+                self._click(item.first)
+                time.sleep(0.8)
+                done.append(name)
+        finally:
+            try:
+                if self._visible(S.FRIENDS_WINDOW):
+                    self._click(S.FRIENDS_CLOSE, 3000)
+            except Exception:
+                pass
+        return done
+
+    def answer_party_invite(self, leader, timeout=40):
+        """CONVIDADO: trata os cartoes ate' estar na party do lider seguindo-o e com 'aceitar tudo' ligado.
+        Ordem vista ao vivo: 'ENTRAR E ACEITAR TUDO' (mesmo mundo) ou 'ENTRAR' (outro mundo: carrega) ->
+        'SEGUIR O LÍDER'. Nunca clica em RECUSAR / MANTER A ATUAL."""
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            st = self.read()
+            if st.phase in ("loading", "leaving"):
+                time.sleep(1.0)
+                continue
+            clicked = False
+            for label in ("ENTRAR E ACEITAR TUDO", "SEGUIR O LÍDER", "ENTRAR"):
+                if any(b.strip().upper() == label for b in st.invite):
+                    self._click(self.page.locator(S.PARTY_INVITE_BTN).filter(has_text=re.compile(rf"^\s*{label}\s*$", re.I)).first)
+                    self.log(f"[{self.name}] party: {label.lower()}")
+                    clicked = True
+                    break
+            if clicked:
+                time.sleep(1.5)
+                continue
+            in_party = any(n.casefold() == leader.casefold() for n in st.party_names)
+            if in_party and st.accept_all is False:
+                self._click(S.PARTY_SWITCH, 3000)
+                self.log(f"[{self.name}] party: aceitar tudo do lider ligado")
+                time.sleep(1.0)
+                continue
+            if in_party and st.accept_all and not st.invite:
+                return True
+            time.sleep(1.0)
+        return False
+
+    def share_costs(self):
+        """LIDER: 'Ratear custos da hunt' (se ainda nao estiver ligado)."""
+        if self.read().costs_shared:
+            return True
+        offer = self.page.locator(S.PARTY_COSTS_OFFER)
+        if offer.count() == 0 or not offer.first.is_visible():
+            if self._visible(S.PARTY_NAV):
+                self._click(S.PARTY_NAV, 3000)
+                time.sleep(0.8)
+        if offer.count() == 0:
+            return False
+        self._click(offer.first)
+        return self._wait(lambda: bool(self.read().costs_shared), 5)
 
     # ------------------------------------------------------------- imbuements
     def read_equipment(self):

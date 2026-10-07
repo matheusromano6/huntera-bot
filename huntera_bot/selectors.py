@@ -97,6 +97,30 @@ MARKET_TOTAL = ".market-accept-total"           # 'Total: 4.998 de gold'
 MARKET_CONFIRM = ".market-accept button.market-primary"
 MARKET_DISMISS = ".market-accept .market-accept-dismiss"
 
+# tela de personagens (/characters): aparece no server save (todo dia ~12h) e quando a conta cai.
+# 'Server save. Tente de novo mais tarde.' + previsao; quando volta o aviso troca sozinho e o Jogar habilita
+CHAR_NOTICE = ".door-notice"
+CHAR_NAME = ".character-list article.selected .character-meta strong"
+CHAR_PLAY = ".character-list article.selected .character-actions button:not(.character-delete)"
+MOTD = ".motd-gate"                         # 'PATCH NOTES' depois de entrar; botao 'Fechar'
+MOTD_CLOSE = ".motd-gate button"
+
+# party pelos amigos: o lider convida pelo botao direito no nome
+FRIENDS_NAV = "#nav-friends"                # abre/FECHA a lista (so' clicar se estiver fechada)
+FRIENDS_WINDOW = ".friends-window"
+FRIENDS_ENTRY = ".friends-entry"
+FRIENDS_NAME = ".friends-name"              # 'MR Sorc [ED]'
+FRIENDS_MENU_ITEM = ".friends-context-menu button"   # 'Convidar para a party'
+FRIENDS_CLOSE = ".friends-dismiss"
+# cartoes do convidado (um de cada vez): 'ENTRAR E ACEITAR TUDO' (mesmo mundo) | 'ENTRAR' (lider em outro
+# mundo: carrega e o TREINO CAI) -> 'SEGUIR O LÍDER' / 'MANTER A ATUAL'
+PARTY_INVITE_BTN = ".party-invite button"
+PARTY_NAV = "#nav-party"                    # so' aparece com party
+PARTY_WINDOW = ".party-window"
+PARTY_SWITCH = ".party-follow-switch"       # 'Aceitar tudo do líder' (desligado) | 'Parar de aceitar tudo'
+PARTY_COSTS_OFFER = ".party-costs-offer"    # 'Ratear custos da hunt' (lider)
+PARTY_COSTS_STATE = ".party-costs-state"    # 'Cada um paga o seu' | 'Rateio ligado — ...'
+
 # Bestiary (rastreador do HUD): cabecalho 'Rat Cellars 0 / 1' = criaturas TOTALMENTE concluidas
 BESTIARY_HEAD = ".bestiary-tracker-hunt-head"
 BESTIARY_ROW = ".bestiary-tracker-row"

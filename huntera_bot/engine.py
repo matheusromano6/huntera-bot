@@ -105,6 +105,7 @@ class Engine:
         self.last_phase = {}            # nome -> fase lida no tick anterior
         self.idle_since = {}            # chave do grupo -> desde quando alguem esta parado na cidade
         self.last_hunt = {}             # chave do grupo -> (hunt, tier) da ultima vez que estava caçando
+        self.party_retry = 0.0          # depois de falhar ao montar a party, espera antes de tentar de novo
         self.snapshot = {"states": {}, "groups": {}}   # lido pela interface (so' leitura)
         self.imbuer = Imbuer(cfg, self.memory, log, clock)
 
@@ -147,7 +148,7 @@ class Engine:
         saved = self.memory.get(group.key)
         if saved:
             return saved["hunt"]
-        last = self.last_hunt.get(group.key)
+        last = self._last_hunt(group)
         return last[0] if last else ""
 
     def _watch_phases(self, states):
@@ -354,7 +355,7 @@ class Engine:
             return None
         tr = self.cfg["training"]
         saved = self.memory.get(group.key)
-        known = (saved["hunt"], saved.get("tier")) if saved else self.last_hunt.get(group.key)
+        known = (saved["hunt"], saved.get("tier")) if saved else self._last_hunt(group)
         if not known:
             current = next((s.hunt_name for s in states.values() if s.hunt_name), "")
             known = (current, self.cfg["hunt_tiers"].get(current)) if current else None
@@ -419,6 +420,7 @@ class Engine:
             current = next((s.hunt_name for s in group.states.values() if s.hunt_name), "")
             if current:
                 self.last_hunt[group.key] = (current, self.cfg["hunt_tiers"].get(current))
+                self.memory.set_last_hunt(group.key, current, self.cfg["hunt_tiers"].get(current))
         waiting = [m for m in group.members if m.name in group.states
                    and group.states[m.name].phase in ("city", "training") and self.imbuer.tasks(m.name)]
         if waiting:              # ja na cidade/treinando com imbuement pendente: imbui agora (sem cancelar o treino)
@@ -477,6 +479,83 @@ class Engine:
         wait = self.cfg["cooldown_ok_seconds"] if ok else self.cfg["cooldown_fail_seconds"]
         self.cooldown[group.key] = self.clock() + wait
 
+    def _last_hunt(self, group):
+        """Ultima caçada do time: a desta execucao ou a gravada no memory.json (sobrevive ao server save)."""
+        last = self.last_hunt.get(group.key)
+        if last:
+            return last
+        saved = self.memory.get_last_hunt(group.key)
+        return (saved["hunt"], saved.get("tier")) if saved else None
+
+    # --------------------------------------------------- volta do server save
+    def _login(self, acc, st):
+        """Tela de personagens: espera o Jogar habilitar (o jogo avisa sozinho) e entra; fecha o PATCH NOTES."""
+        if st.phase == "select":
+            if not st.play_ready:
+                self._warn(("maint", st.name), f"[{st.name}] fora do jogo: {st.notice or 'aguardando o Jogar'}", every=900)
+                return
+            self.log(f"[{st.name}] o jogo voltou: entrando")
+            if acc.play():
+                self.log(f"[{st.name}] dentro do jogo")
+                acc.close_motd()
+            return
+        if st.motd:
+            acc.close_motd()
+
+    def _party(self, states):
+        """Mantem a party configurada: o lider (na cidade/treino) convida quem estiver fora e cada membro
+        aceita (aceitar tudo + seguir o lider); o lider rateia os custos. Retorna as contas (minusculas)
+        que nao devem treinar/caçar ainda porque a party esta sendo montada."""
+        pcfg = self.cfg.get("party") or {}
+        leader_key = (pcfg.get("leader") or "").casefold()
+        if not pcfg.get("enabled") or not leader_key:
+            return set()
+        by_name = {a.name.casefold(): a for a in self.accounts}
+        state = {n.casefold(): s for n, s in states.items()}
+        members = [m.casefold() for m in pcfg.get("members") or [] if m.casefold() != leader_key and m.casefold() in by_name]
+        team = {leader_key, *members}
+        lst = state.get(leader_key)
+        if lst is None:
+            return set()
+        if lst.phase in ("select", "loading"):
+            return {n for n in team if state.get(n) and state[n].phase != "hunting"}
+        if lst.phase not in ("city", "training"):
+            return set()            # lider caçando: nao mexe na party no meio da caçada
+        in_party = {n.casefold() for n in lst.party_names}
+        waiting = {m for m in members if state.get(m) and state[m].phase in ("select", "loading")}
+        missing = [m for m in members if state.get(m) and state[m].phase in ("city", "training") and m not in in_party]
+        loose = [m for m in members if m in in_party and state.get(m) and state[m].accept_all is False]
+        if not (missing or loose):
+            if lst.costs_shared is False and pcfg.get("share_costs", True) and in_party:
+                try:
+                    by_name[leader_key].share_costs() and self.log(f"[{lst.name}] party: rateio de custos ligado")
+                except Exception as error:
+                    self.log(f"[{lst.name}] ERRO ao ratear custos: {error}")
+            return waiting and team
+        if self.clock() < self.party_retry:
+            return team
+        leader = by_name[leader_key]
+        ok = True
+        try:
+            if missing:
+                names = [state[m].name for m in missing]
+                self.log(f"[{lst.name}] PARTY: convidando {', '.join(names)}")
+                leader.invite_to_party(names)
+            for m in missing + loose:
+                if not by_name[m].answer_party_invite(lst.name):
+                    self.log(f"[{state[m].name}] party: nao consegui entrar na party de {lst.name}")
+                    ok = False
+            if ok and pcfg.get("share_costs", True):
+                leader.share_costs()
+            if ok:
+                self.log(f"[{lst.name}] PARTY montada: {', '.join(state[m].name for m in members if m in state)}")
+        except Exception as error:
+            self.log(f"[{lst.name}] ERRO ao montar a party: {error}")
+            ok = False
+        if not ok:
+            self.party_retry = self.clock() + 60
+        return team
+
     def _handle_dispatch(self, acc, st):
         d = self.cfg["dispatch"]
         if not d.get("enabled") or st.phase != "hunting" or not st.dispatch_ready:
@@ -497,6 +576,13 @@ class Engine:
             self.last_refresh = self.clock()
             self.accounts = self.refresh()
         states = self.read_all()
+        for acc in self.accounts:
+            st = states.get(acc.name)
+            if st:
+                try:
+                    self._login(acc, st)
+                except Exception as error:
+                    self.log(f"[{st.name}] ERRO ao entrar no jogo: {error}")
         groups = build_groups([a for a in self.accounts if a.name in states], states)
         self.snapshot = {
             "states": states,
@@ -520,7 +606,10 @@ class Engine:
                     self.log(f"[{st.name}] nao consegui ler os imbuements: {error}")
         if self.imbuer.requested:
             self.imbuer.refresh_all(self.accounts, states)
+        busy = self._party(states)
         for group in groups:
+            if busy & {m.name.casefold() for m in group.members}:
+                continue          # party ainda sendo montada: nao treina/caça separado
             self._handle_group(group)
 
     def run(self, stop_event):

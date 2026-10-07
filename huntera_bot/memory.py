@@ -38,6 +38,16 @@ class Memory:
         self.imbue().setdefault(section, {})[key_] = value
         self._save()
 
+    # ultima caçada de cada time (sobrevive a fechar o bot e ao server save)
+    def get_last_hunt(self, names):
+        return (self.data.get("last_hunt") or {}).get(key(names))
+
+    def set_last_hunt(self, names, hunt, tier):
+        value = {"hunt": hunt, "tier": tier}
+        if self.get_last_hunt(names) != value:
+            self.data.setdefault("last_hunt", {})[key(names)] = value
+            self._save()
+
     def get(self, names):
         return self.data.get(key(names))
 

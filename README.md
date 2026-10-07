@@ -39,6 +39,8 @@ Logs em `logs/huntera_AAAA-MM-DD.log`. Testes: `python -m unittest discover -s t
 | Parado na cidade | conta na cidade **sem treino** por mais de `idle_city_seconds` (90s) | se o time estava em treino (ou stamina baixa / hunt desconhecida) reinicia o treino online dela; senao o time volta pra ultima hunt |
 | Volta do treino | **todas** as contas treinando com stamina >= `training.resume_stamina_minutes` (600 = 10h) | cancela o treino de todas e a lider reinicia a hunt lembrada (com o time) |
 | Bestiary em cadeia | cabecalho do rastreador fecha N/N em **todas** as contas e `bestiary_chain.enabled` | vai pra proxima hunt da lista |
+| Volta do server save | conta na tela de personagens (manutencao diaria ~12h, ou caiu) | espera o "Jogar" habilitar (o jogo avisa sozinho), entra e fecha o "PATCH NOTES" |
+| Party | `party.enabled` e alguem marcado fora da party do lider (lider na cidade/treino) | o lider convida pelos amigos (botao direito > Convidar), cada membro entra com "aceitar tudo do lider" e segue o lider, o lider rateia os custos. Depois o time volta a treinar (se estava treinando) ou pra ultima caçada (gravada no memory.json); sem registro, treina |
 | Imbuements | imbuement escolhido na aba nao esta no item (primeira vez, ou acabou com **Renovar**) e o gold cobre | o time sai, cada conta compra no leilao o que falta (das ofertas mais baratas; vai pro depot, que o santuario usa), imbui com protecao automatica e o time volta. Ja na cidade por outro motivo, renova tambem o que tiver < 30 min |
 
 Regras de seguranca: so age quando todas as contas do time estao em hunt (nunca durante carregamento ou contagem de saida),
@@ -49,6 +51,7 @@ nunca toca em paginas de outros jogos do IdleDeck.
 
 - `capacity_pct`, `dispatch`, `sell.keep` (itens que nunca marca), `hunt_tiers` (pull por hunt; vazio = usa o ultimo salvo).
 - `bestiary_chain.hunts`: ex. `[{"name": "Rat Cellars"}, {"name": "Spider Nest", "tier": "Ousado"}]`.
+- `party`: `enabled`, `leader`, `members`, `share_costs` (secao Party na aba Regras).
 - `imbuements`: `use_tokens` (gold tokens no lugar dos materiais, se a conta tiver), `renew_before_minutes` (30) e `plan`
   (montado pela aba Imbuements).
 
