@@ -89,6 +89,8 @@ class Imbuer:
         sig = tuple(st.imbue_pips)
         if self.pips.get(st.name) != sig or now - self.equip_at.get(st.name, -1e9) >= EQUIP_EVERY:
             items = acc.read_equipment()
+            if len(items) < len(st.imbue_pips):      # algum item nao foi lido: mantem o que ja sabia dele
+                items = {**self.equipment(st.name), **items}
             self.pips[st.name] = sig
             self.equip_at[st.name] = now
             self._store_equipment(st, items)

@@ -189,6 +189,16 @@ class ImbuerTests(unittest.TestCase):
         self.assertEqual(kinds(world, "leave"), [])
         self.assertEqual(acc.state.phase, "training")
 
+    def test_item_missing_from_a_bad_read_keeps_what_was_known(self):
+        items = {"stonecutter axe": [dict(EMPTY)], "vampire shield": [dict(EMPTY)]}
+        world, acc, engine, clock, logs = setup(items=items, plan={})
+        engine.tick()
+        acc.read_equipment = lambda: {"vampire shield": [dict(EMPTY)]}     # leitura falhou na arma
+        acc.items["vampire shield"][0].update(active="Basic Demon Presence", minutes=1200)   # bolinhas mudam
+        clock.t += 10
+        engine.tick()
+        self.assertIn("stonecutter axe", engine.imbuer.equipment("MR SORC"))
+
     def test_active_with_time_left_does_not_trigger(self):
         items = {"vampire shield": [{"active": "Basic Demon Presence", "minutes": 20}]}
         world, acc, engine, clock, logs = setup(items=items)

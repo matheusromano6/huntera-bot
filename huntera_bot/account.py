@@ -402,11 +402,20 @@ class Account:
         out = {}
         try:
             for slot in self.page.evaluate(EQUIP_JS, _SEL):
-                self.page.locator(S.EQUIP_SLOT).nth(slot["i"]).hover(timeout=3000)
-                time.sleep(0.35)
-                name, slots = parse_tooltip(self.page.evaluate(TOOLTIP_JS, _SEL))
-                if name:
-                    out[name] = slots or [{"active": None, "minutes": None}] * slot["total"]
+                # CONFIRMADO ao vivo: o tooltip do item anterior pode continuar na tela e o nome vinha errado
+                # (a arma sumia da leitura). Tira o mouse, espera o tooltip sumir e so' aceita um com o
+                # numero certo de slots e um nome que ainda nao foi lido.
+                for _attempt in range(3):
+                    self.page.mouse.move(2, 2)
+                    self._wait(lambda: not self.page.evaluate(TOOLTIP_JS, _SEL), 1.0, 0.1)
+                    self.page.locator(S.EQUIP_SLOT).nth(slot["i"]).hover(timeout=3000)
+                    self._wait(lambda: self.page.evaluate(TOOLTIP_JS, _SEL), 1.5, 0.1)
+                    name, slots = parse_tooltip(self.page.evaluate(TOOLTIP_JS, _SEL))
+                    if name and name not in out and len(slots) == slot["total"]:
+                        out[name] = slots
+                        break
+                else:
+                    self.log(f"[{self.name}] nao consegui ler o item do slot '{slot['equip']}'")
         finally:
             self.page.mouse.move(2, 2)
         return out
