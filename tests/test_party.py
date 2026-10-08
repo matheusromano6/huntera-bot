@@ -146,6 +146,17 @@ class ServerSaveTests(unittest.TestCase):
         self.assertEqual(kinds(w, "start"), [])
         self.assertEqual(len(kinds(w, "train")), 3)
 
+    def test_without_any_record_the_team_goes_to_the_default_hunt(self):
+        w = world_after_server_save()
+        engine, clock, logs = engine_for(w)
+        engine.cfg["default_hunt"] = {"name": "Lower Roshamuul", "tier": "Agressivo"}
+        engine.tick()
+        engine.tick()
+        clock.t += 200
+        engine.tick()
+        self.assertEqual(kinds(w, "train"), [])
+        self.assertEqual(kinds(w, "start")[0][2:5], ("Lower Roshamuul", "Agressivo", True))
+
     def test_disabled_party_does_nothing(self):
         w = world_after_server_save()
         engine, clock, logs = engine_for(w, enabled=False)

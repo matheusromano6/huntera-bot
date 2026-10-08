@@ -51,6 +51,7 @@ nunca toca em paginas de outros jogos do IdleDeck.
 
 - `capacity_pct`, `dispatch`, `sell.keep` (itens que nunca marca), `hunt_tiers` (pull por hunt; vazio = usa o ultimo salvo).
 - `bestiary_chain.hunts`: ex. `[{"name": "Rat Cellars"}, {"name": "Spider Nest", "tier": "Ousado"}]`.
+- `default_hunt`: caçada e pull pra onde o time vai quando o bot nao sabe pra onde voltar (topo da aba Bestiary).
 - `party`: `enabled`, `leader`, `members`, `share_costs` (secao Party na aba Regras).
 - `imbuements`: `use_tokens` (gold tokens no lugar dos materiais, se a conta tiver), `renew_before_minutes` (30) e `plan`
   (montado pela aba Imbuements).

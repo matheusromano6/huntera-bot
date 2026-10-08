@@ -19,7 +19,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - `idledeck.py` (conexao/descoberta), `launcher.py` (abre o IdleDeck com a porta), `updater.py` (botao Atualizar),
   `gui.py` (CustomTkinter + bandeja), `runner.py` (thread do motor), `catalog.py` + `data/hunts.json` (75 caçadas, ordem do jogo),
   `config.py` (padroes), `paths.py` (arquivos ao lado do .exe quando empacotado).
-- `tests/` (120 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
+- `tests/` (122 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
 
 ## O que o bot faz (regras)
 - **Capacidade:** QUALQUER conta do time >= `capacity_pct` -> a lider sai (leva todos, 5s) -> cada conta vende a MOCHILA (marca tudo)
@@ -92,7 +92,8 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
   esta em outro mundo" -> "ENTRAR" (carrega e o TREINO CAI) -> "SEGUIR O LÍDER" -> `.party-follow-switch` "Aceitar tudo do líder".
   Lider: `.party-costs-offer` "Ratear custos da hunt" -> `.party-costs-state` "Rateio ligado". No lider o switch aparece desligado (normal).
 - Engine._party: so com o lider na cidade/treino; enquanto monta, o time nao treina/caça separado. Ultima caçada gravada em
-  memory.json (`last_hunt`); volta: treino (se estava treinando) > ultima caçada (stamina ok) > treino.
+  memory.json (`last_hunt`); volta: treino (se estava treinando) > ultima caçada (stamina ok) > caçada padrao > treino.
+- v1.4.2: `default_hunt` {name, tier} (aba Bestiary, topo): ultimo recurso quando o bot nao sabe pra onde voltar (Engine._default_hunt).
 
 ## IdleDeck
 - Nao expoe porta sozinho: abrir pela ATIVACAO DO PACOTE com `--remote-debugging-port=9224` (ver `launcher.py`).

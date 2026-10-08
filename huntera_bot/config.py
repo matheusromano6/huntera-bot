@@ -62,6 +62,8 @@ DEFAULTS = {
         # nome da conta (minusculas) -> item -> [{"imbuement": "Strike", "tier": "Powerful", "renew": true}, ...]
         "plan": {},
     },
+    # caçada padrao: pra onde o time vai quando o bot nao sabe pra onde voltar (sem caçada atual/lembrada)
+    "default_hunt": {"name": "", "tier": ""},
     # 'tier' por hunt: se vazio, o jogo ja vem com o ultimo pull salvo e o bot nao mexe
     "hunt_tiers": {},         # ex: {"Vampire Crypt": "Ousado"}
     # esperas (segundos)

@@ -185,6 +185,16 @@ class GuiTests(unittest.TestCase):
         self.app._imbue_save()
         self.assertNotIn("mr sorc", self.saved()["imbuements"]["plan"])
 
+    def test_14_default_hunt(self):
+        self.app.default_hunt.set("Rat Cellars")
+        self.app.default_tier.set("Agressivo")
+        self.app._default_changed()
+        self.assertEqual(self.saved()["default_hunt"], {"name": "Rat Cellars", "tier": "Agressivo"})
+        self.app.default_hunt.set(gui.NO_DEFAULT)
+        self.app.default_tier.set(gui.TIERS[0])
+        self.app._default_changed()
+        self.assertEqual(self.saved()["default_hunt"], {"name": "", "tier": ""})
+
     def _drain_log(self):
         """Texto do painel de log (o laco do app passa a fila pro painel)."""
         pump(self.root, 0.4)

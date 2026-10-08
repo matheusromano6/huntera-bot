@@ -465,8 +465,11 @@ class Engine:
             self.cooldown[group.key] = self.clock() + (self.cfg["cooldown_ok_seconds"] if ok else self.cfg["cooldown_fail_seconds"])
             return
         if not hunt:
-            self._warn(("nohunt", group.key), f"[{group.label}] {reason}, mas nao sei qual hunt retomar (rastreador vazio)")
-            return
+            fallback = self._last_hunt(group)
+            if not fallback:
+                self._warn(("nohunt", group.key), f"[{group.label}] {reason}, mas nao sei qual hunt retomar (configure a caçada padrao)")
+                return
+            hunt, tier = fallback[0], self._tier(group, fallback[0])
         try:
             ok = self.run_cycle(group, reason, hunt, tier)
         except Exception as error:
@@ -494,7 +497,7 @@ class Engine:
         seen = next((s.pull_tier for s in ordered if s.pull_tier and s.pull_hunt.casefold() == hunt.casefold()), None)
         if seen:
             return seen
-        for last in (self.last_hunt.get(group.key), self._saved_last(group)):
+        for last in (self.last_hunt.get(group.key), self._saved_last(group), self._default_hunt()):
             if last and last[0] == hunt and last[1]:
                 return last[1]
         return None
@@ -509,7 +512,12 @@ class Engine:
         if last:
             return last
         saved = self.memory.get_last_hunt(group.key)
-        return (saved["hunt"], saved.get("tier")) if saved else None
+        return (saved["hunt"], saved.get("tier")) if saved else self._default_hunt()
+
+    def _default_hunt(self):
+        """Caçada padrao (aba Bestiary): pra onde ir quando o bot nao sabe pra onde voltar."""
+        d = self.cfg.get("default_hunt") or {}
+        return (d["name"], d.get("tier") or None) if d.get("name") else None
 
     # --------------------------------------------------- volta do server save
     def _login(self, acc, st):

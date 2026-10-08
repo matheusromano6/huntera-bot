@@ -25,6 +25,7 @@ TEXT, MUTED, ACCENT, ACCENT_HOVER, DANGER, WARN = "#e6edf3", "#8b98a5", "#3fb950
 TIERS = ["(padrao do jogo)", "Cauteloso", "Ousado", "Agressivo"]
 PHASES = {"hunting": "caçando", "city": "cidade", "training": "treinando", "leaving": "saindo", "loading": "carregando", "unknown": "?"}
 MAX_LOG_LINES = 500
+NO_DEFAULT = "(nenhuma)"
 
 
 def fmt_gold(value):
@@ -473,8 +474,21 @@ class App:
 
     # -------------------------------------------------------------- bestiary
     def _build_bestiary(self, tab):
+        default = ctk.CTkFrame(tab, fg_color=PANEL_ALT)
+        default.pack(fill="x", padx=10, pady=(8, 4))
+        ctk.CTkLabel(default, text="Caçada padrão:", text_color=TEXT, font=("Segoe UI", 12, "bold")).pack(side="left", padx=(10, 6), pady=8)
+        names = [NO_DEFAULT] + [h["name"] for h in self.hunts]
+        current = self.cfg["default_hunt"]
+        self.default_hunt = tk.StringVar(value=current.get("name") if current.get("name") in names else NO_DEFAULT)
+        ctk.CTkOptionMenu(default, values=names, variable=self.default_hunt, width=220, fg_color=PANEL,
+                          dynamic_resizing=False, command=lambda _v: self._default_changed()).pack(side="left", padx=4)
+        self.default_tier = tk.StringVar(value=current.get("tier") or TIERS[0])
+        ctk.CTkOptionMenu(default, values=TIERS, variable=self.default_tier, width=150, fg_color=PANEL,
+                          command=lambda _v: self._default_changed()).pack(side="left", padx=4)
+        ctk.CTkLabel(default, text="pra onde o time vai quando o bot não sabe pra onde voltar",
+                     text_color=MUTED).pack(side="left", padx=8)
         top = ctk.CTkFrame(tab, fg_color="transparent")
-        top.pack(fill="x", padx=10, pady=(8, 4))
+        top.pack(fill="x", padx=10, pady=(4, 4))
         self.chain_enabled = tk.BooleanVar(value=self.cfg["bestiary_chain"]["enabled"])
         ctk.CTkCheckBox(top, text="Ir para a próxima hunt quando o Bestiary da atual fechar (em todas as contas do time)",
                         variable=self.chain_enabled, command=self._chain_changed, fg_color=ACCENT, text_color=TEXT).pack(anchor="w")
@@ -509,6 +523,14 @@ class App:
         ctk.CTkOptionMenu(tier_row, values=TIERS, variable=self.tier_var, command=self._tier_changed, fg_color=PANEL, width=160).pack(side="left")
         self._refresh_catalog()
         self._refresh_chain()
+
+    def _default_changed(self):
+        name = self.default_hunt.get()
+        tier = self.default_tier.get()
+        self.cfg["default_hunt"] = {"name": "" if name == NO_DEFAULT else name, "tier": "" if tier == TIERS[0] else tier}
+        self.save()
+        self.log(f"caçada padrão: {self.cfg['default_hunt']['name'] or 'nenhuma'}"
+                 + (f" ({self.cfg['default_hunt']['tier']})" if self.cfg["default_hunt"]["tier"] else ""))
 
     def _listbox(self, parent):
         box = tk.Listbox(parent, bg=BG, fg=TEXT, selectbackground=BORDER, selectforeground=TEXT, highlightthickness=0,
