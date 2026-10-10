@@ -434,12 +434,19 @@ class IdleCityTests(unittest.TestCase):
         w = self.city_world()
         engine, clock = make_engine(w)
         engine.memory.set(("Aliado Um", "Aliado Dois"), {"hunt": "Vampire Crypt", "tier": None})
-        engine.tick()
-        self.assertEqual(w.calls, [])                       # ainda dentro da tolerancia
-        clock.t += engine.cfg["idle_city_seconds"] + 1
-        engine.tick()
+        engine.tick()                                       # 1a vez que ve o time parado: age ja'
         self.assertEqual(sorted(c[:2] for c in w.calls), [("train", "ALIADO DOIS"), ("train", "ALIADO UM")])
         self.assertTrue(all(a.state.phase == "training" for a in w.accounts.values()))
+        # depois disso a tolerancia vale: o treino cai e o bot espera idle_city_seconds
+        w.calls.clear()
+        for a in w.accounts.values():
+            a.state.phase = "city"
+        clock.t += engine.cfg["cooldown_ok_seconds"] + 1
+        engine.tick()
+        self.assertEqual(w.calls, [])
+        clock.t += engine.cfg["idle_city_seconds"] + 1
+        engine.tick()
+        self.assertEqual(len(w.calls), 2)
 
     def test_only_the_idle_account_restarts_training(self):
         w = self.city_world(training=("ALIADO UM",))

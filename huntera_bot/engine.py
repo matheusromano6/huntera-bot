@@ -105,6 +105,7 @@ class Engine:
         self.last_phase = {}            # nome -> fase lida no tick anterior
         self.idle_since = {}            # chave do grupo -> desde quando alguem esta parado na cidade
         self.last_hunt = {}             # chave do grupo -> (hunt, tier) da ultima vez que estava caçando
+        self.idle_seen = set()          # times ja vistos parados na cidade nesta execucao
         self.party_retry = 0.0          # depois de falhar ao montar a party, espera antes de tentar de novo
         self.snapshot = {"states": {}, "groups": {}}   # lido pela interface (so' leitura)
         self.imbuer = Imbuer(cfg, self.memory, log, clock)
@@ -361,6 +362,10 @@ class Engine:
         if not states or not idle or any(s.phase not in ("city", "training") for s in states.values()):
             self.idle_since.pop(group.key, None)
             return None
+        if group.key not in self.idle_seen:
+            # 1a vez que o bot ve este time parado desde que foi iniciado: nao ha o que esperar, age ja'
+            self.idle_seen.add(group.key)
+            self.idle_since.setdefault(group.key, self.clock() - self.cfg["idle_city_seconds"])
         since = self.idle_since.setdefault(group.key, self.clock())
         if self.clock() - since < self.cfg["idle_city_seconds"]:
             return None

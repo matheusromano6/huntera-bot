@@ -248,6 +248,15 @@ class MarkedHuntTests(unittest.TestCase):
         engine.tick()
         self.assertEqual(kinds(w, "start")[0][2:4], ("Troll Hills", "Ousado"))
 
+    def test_bot_started_with_the_team_idle_in_the_city_hunts_right_away(self):
+        w = self._team()
+        for acc in w.accounts.values():
+            acc.state.phase = "city"
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.cfg["default_hunt"] = {"name": "Vampire Crypt", "tier": "Agressivo"}
+        engine.tick()                                   # sem esperar os 90s
+        self.assertEqual(kinds(w, "start")[0][2:5], ("Vampire Crypt", "Agressivo", True))
+
     def test_hunt_inside_the_chain_is_kept_until_the_bestiary_closes(self):
         w = self._team(hunt="Orc Camp")
         engine, clock, logs = engine_for(w, enabled=False)
