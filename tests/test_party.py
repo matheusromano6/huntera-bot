@@ -209,5 +209,52 @@ class PullTests(unittest.TestCase):
         self.assertEqual(kinds(w, "start")[0][3], "Ousado")
 
 
+class MarkedHuntTests(unittest.TestCase):
+    def _team(self, hunt="Spider Nest", pull="Agressivo"):
+        w = PullTests._team(PullTests())
+        for acc in w.accounts.values():
+            acc.state.hunt_name = hunt
+        w.accounts["ALIADO UM"].state.pull_hunt = hunt
+        w.accounts["ALIADO UM"].state.pull_tier = pull
+        return w
+
+    def test_hunting_elsewhere_switches_to_the_default_hunt(self):
+        w = self._team()
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.cfg["default_hunt"] = {"name": "Lower Roshamuul", "tier": "Agressivo"}
+        engine.tick()
+        self.assertEqual(kinds(w, "start")[0][2:5], ("Lower Roshamuul", "Agressivo", True))
+
+    def test_already_in_the_marked_hunt_and_pull_does_nothing(self):
+        w = self._team(hunt="Lower Roshamuul")
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.cfg["default_hunt"] = {"name": "Lower Roshamuul", "tier": "Agressivo"}
+        engine.tick()
+        self.assertEqual(kinds(w, "leave"), [])
+
+    def test_wrong_pull_is_fixed(self):
+        w = self._team(hunt="Lower Roshamuul", pull="Cauteloso")
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.cfg["default_hunt"] = {"name": "Lower Roshamuul", "tier": "Agressivo"}
+        engine.tick()
+        self.assertEqual(kinds(w, "start")[0][2:4], ("Lower Roshamuul", "Agressivo"))
+
+    def test_chain_wins_and_selling_returns_to_the_marked_hunt(self):
+        w = self._team()
+        w.accounts["ALIADO DOIS"].state.cap_pct = 95.0
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.cfg["default_hunt"] = {"name": "Lower Roshamuul", "tier": ""}
+        engine.cfg["bestiary_chain"] = {"enabled": True, "hunts": [{"name": "Troll Hills", "tier": "Ousado"}, {"name": "Orc Camp"}]}
+        engine.tick()
+        self.assertEqual(kinds(w, "start")[0][2:4], ("Troll Hills", "Ousado"))
+
+    def test_hunt_inside_the_chain_is_kept_until_the_bestiary_closes(self):
+        w = self._team(hunt="Orc Camp")
+        engine, clock, logs = engine_for(w, enabled=False)
+        engine.cfg["bestiary_chain"] = {"enabled": True, "hunts": [{"name": "Troll Hills"}, {"name": "Orc Camp"}]}
+        engine.tick()
+        self.assertEqual(kinds(w, "leave"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

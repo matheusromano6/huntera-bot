@@ -224,12 +224,20 @@ class Engine:
         low = self._stamina_trigger(group)
         if low:                      # stamina vem antes de tudo: sem ela nao ha mais hunt
             return ("training", "stamina baixa: " + ", ".join(low), current, None)
+        dest = self._destination(group, current)
+        hunt, tier = dest if dest else (current, self._tier(group, current))
         imbue = self.imbuer.exit_reason(group)
         if imbue:                    # imbuement planejado faltando (primeira vez ou acabou com 'Renovar')
-            return ("cycle", imbue, current, self._tier(group, current))
+            return ("cycle", imbue, hunt, tier)
         full = self._capacity_trigger(group)
         if full:
-            return ("cycle", "capacidade: " + ", ".join(full), current, self._tier(group, current))
+            return ("cycle", "capacidade: " + ", ".join(full), hunt, tier)
+        if dest and current and current.casefold() != dest[0].casefold():
+            return ("cycle", f"caçada marcada: '{dest[0]}' (estava em '{current}')", dest[0], dest[1])
+        if dest and current and dest[1]:
+            pull = self._seen_pull(group, current)
+            if pull and pull.casefold() != dest[1].casefold():
+                return ("cycle", f"pull marcado: {dest[1]} (estava em {pull})", dest[0], dest[1])
         tracked = [s for s in states if s.bestiary_total]   # quem nao mostra o rastreador nao conta
         if tracked and all(s.bestiary_complete for s in tracked):
             nxt = self._chain_next(current)
@@ -270,6 +278,9 @@ class Engine:
         need = self.cfg["training"]["resume_stamina_minutes"]
         if any(s.stamina_min is None or s.stamina_min < need for s in states):
             return None
+        dest = self._destination(group, self.group_hunt(group))
+        if dest:
+            return dest
         saved = self.memory.get(group.key)
         if saved:
             return saved["hunt"], saved.get("tier")
@@ -355,7 +366,8 @@ class Engine:
             return None
         tr = self.cfg["training"]
         saved = self.memory.get(group.key)
-        known = (saved["hunt"], saved.get("tier")) if saved else self._last_hunt(group)
+        known = self._destination(group, self.group_hunt(group)) or (
+            (saved["hunt"], saved.get("tier")) if saved else self._last_hunt(group))
         if not known:
             current = next((s.hunt_name for s in states.values() if s.hunt_name), "")
             known = (current, self._tier(group, current)) if current else None
@@ -465,7 +477,7 @@ class Engine:
             self.cooldown[group.key] = self.clock() + (self.cfg["cooldown_ok_seconds"] if ok else self.cfg["cooldown_fail_seconds"])
             return
         if not hunt:
-            fallback = self._last_hunt(group)
+            fallback = self._destination(group, "") or self._last_hunt(group)
             if not fallback:
                 self._warn(("nohunt", group.key), f"[{group.label}] {reason}, mas nao sei qual hunt retomar (configure a caçada padrao)")
                 return
@@ -482,6 +494,25 @@ class Engine:
             ok = False
         wait = self.cfg["cooldown_ok_seconds"] if ok else self.cfg["cooldown_fail_seconds"]
         self.cooldown[group.key] = self.clock() + wait
+
+    def _destination(self, group, current):
+        """Caçada MARCADA pelo usuario (manda sobre a anterior): cadeia do Bestiary ligada -> a atual se
+        estiver na cadeia (ate' fechar, ai a proxima), senao a 1a da cadeia; senao a caçada padrao. None = nenhuma."""
+        chain = self.cfg.get("bestiary_chain") or {}
+        hunts = chain.get("hunts") or []
+        if chain.get("enabled") and hunts:
+            entry = next((h for h in hunts if current and h["name"].casefold() == current.casefold()), hunts[0])
+            return entry["name"], entry.get("tier") or self.cfg["hunt_tiers"].get(entry["name"]) or self._tier(group, entry["name"])
+        default = self._default_hunt()
+        if default:
+            return default[0], default[1] or self.cfg["hunt_tiers"].get(default[0]) or self._tier(group, default[0])
+        return None
+
+    def _seen_pull(self, group, hunt):
+        """Pull que a lider esta usando agora na caçada (lido da janela de caçada), ou None."""
+        leader = group.leader.name if group.leader else None
+        ordered = sorted(group.states.values(), key=lambda s: s.name != leader)
+        return next((s.pull_tier for s in ordered if s.pull_tier and s.pull_hunt.casefold() == (hunt or "").casefold()), None)
 
     def _tier(self, group, hunt):
         """Pull pra voltar a 'hunt': o configurado (hunt_tiers) > o que a lider esta usando (lido da janela de
