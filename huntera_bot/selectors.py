@@ -105,6 +105,11 @@ CHAR_NAME = ".character-list article.selected .character-meta strong"
 CHAR_PLAY = ".character-list article.selected .character-actions button:not(.character-delete)"
 MOTD = ".motd-gate"                         # 'PATCH NOTES' depois de entrar; botao 'Fechar'
 MOTD_CLOSE = ".motd-gate button"
+# recompensa diaria (depois do server save): escolhe a arma de treino e pega
+DAILY_WINDOW = ".daily-reward-window"
+DAILY_CARD = ".daily-reward-card"          # 'training axe / sua vocação' (.off-vocation = fora da vocacao)
+DAILY_CLAIM = ".daily-reward-claim"        # 'Pegar a recompensa' (desabilitado ate' escolher)
+DAILY_LATER = ".daily-reward-later"        # 'Talvez depois'
 
 # party pelos amigos: o lider convida pelo botao direito no nome
 FRIENDS_NAV = "#nav-friends"                # abre/FECHA a lista (so' clicar se estiver fechada)

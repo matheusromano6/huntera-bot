@@ -85,6 +85,17 @@ def default_skill(training_cfg, vocation):
     return None
 
 
+def reward_weapon(skill, vocation):
+    """Arma de treino da recompensa diaria pra habilidade de treino ('Magic Level' -> rod no druid, wand no sorcerer)."""
+    skill = (skill or "").casefold()
+    if skill.startswith("magic"):
+        return "rod" if "druid" in (vocation or "").casefold() else "wand"
+    for key, weapon in (("axe", "axe"), ("sword", "sword"), ("club", "club"), ("distance", "bow"), ("shield", "shield")):
+        if skill.startswith(key):
+            return weapon
+    return None
+
+
 def _merge(base, extra):
     out = copy.deepcopy(base)
     for key, value in (extra or {}).items():

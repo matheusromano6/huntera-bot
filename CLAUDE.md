@@ -19,7 +19,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - `idledeck.py` (conexao/descoberta), `launcher.py` (abre o IdleDeck com a porta), `updater.py` (botao Atualizar),
   `gui.py` (CustomTkinter + bandeja), `runner.py` (thread do motor), `catalog.py` + `data/hunts.json` (75 caçadas, ordem do jogo),
   `config.py` (padroes), `paths.py` (arquivos ao lado do .exe quando empacotado).
-- `tests/` (128 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
+- `tests/` (129 testes: `python -m unittest discover -s tests`). Nomes de personagens reais NAO entram nos testes/repo.
 
 ## O que o bot faz (regras)
 - **Capacidade:** QUALQUER conta do time >= `capacity_pct` -> a lider sai (leva todos, 5s) -> cada conta vende a MOCHILA (marca tudo)
@@ -87,6 +87,7 @@ pagina `huntera.com.br` na mesma conexao. Paginas de outros jogos do IdleDeck nu
 - Todo dia ~12h (1 min a 1h): a pagina vai pra `/characters`; `.door-notice` "Server save..." + previsao (NAO confiavel: mudou de
   12:20 pra 12:44 e voltou 12:22). Quando volta o aviso troca sozinho ("O jogo voltou...") e `CHAR_PLAY` habilita (sem recarregar).
   Jogar -> cidade em ~6s (sem ENTERING WORLD). Depois aparece `.motd-gate` "PATCH NOTES" -> botao "Fechar". A PARTY SE DESFAZ.
+- v1.4.5: pode aparecer `.daily-reward-window` "RECOMPENSA DIÁRIA": `.daily-reward-card` (training sword/axe/club/bow/rod/wand/shield; `.off-vocation` = fora; selecionado = aria-pressed) -> `.daily-reward-claim`. Texto do cartao junta nome+rotulo SEM espaco (usar 1a linha do innerText). Arma = config.reward_weapon(habilidade de treino): axe/sword/club/bow/shield; Magic Level = rod (druid) / wand (sorcerer). "Talvez depois" (`.daily-reward-later`) so fecha no cliente (o servidor reoferece: msg daily-reward-offer); fora da vocacao abre `.daily-reward-warning`.
 - Party pelos amigos (testado ao vivo, ver selectors.py): lider `#nav-friends` (abre E fecha: so clicar fechada) -> botao direito
   em `.friends-entry` -> "Convidar para a party". Convidado: "ENTRAR E ACEITAR TUDO" (mesmo mundo) OU "CONVITE PARA SE JUNTAR -
   esta em outro mundo" -> "ENTRAR" (carrega e o TREINO CAI) -> "SEGUIR O LÍDER" -> `.party-follow-switch` "Aceitar tudo do líder".

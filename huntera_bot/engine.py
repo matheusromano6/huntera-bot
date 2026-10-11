@@ -566,9 +566,14 @@ class Engine:
             if acc.play():
                 self.log(f"[{st.name}] dentro do jogo")
                 acc.close_motd()
-            return
+                st = acc.read()
+            else:
+                return
         if st.motd:
             acc.close_motd()
+        if st.daily:             # recompensa diaria: a arma da habilidade de treino escolhida pra conta
+            skill = self.training_skill_for(st.name, st.vocation)
+            acc.claim_daily_reward(config.reward_weapon(skill, st.vocation))
 
     def _party(self, states):
         """Mantem a party configurada: o lider (na cidade/treino) convida quem estiver fora e cada membro

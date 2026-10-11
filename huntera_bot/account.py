@@ -38,7 +38,7 @@ READ_JS = """(S) => {
     pull: (() => { const t = q(S.HUNT_TIER + '.selected strong'), d = q(S.HUNT_DETAIL);
       return t ? {hunt: txt(d && d.querySelector('h2, h3, strong')), tier: txt(t)} : null; })(),
     select: !!q(S.CHAR_PLAY), play_ready: !!q(S.CHAR_PLAY) && !q(S.CHAR_PLAY).disabled,
-    select_name: txt(q(S.CHAR_NAME)), notice: txt(q(S.CHAR_NOTICE)), motd: vis(q(S.MOTD)),
+    select_name: txt(q(S.CHAR_NAME)), notice: txt(q(S.CHAR_NOTICE)), motd: vis(q(S.MOTD)), daily: vis(q(S.DAILY_WINDOW)),
     invite: Array.from(document.querySelectorAll(S.PARTY_INVITE_BTN)).filter(vis).map(txt),
     follow_switch: txt(q(S.PARTY_SWITCH)), costs: txt(q(S.PARTY_COSTS_STATE)),
     pips: Array.from(document.querySelectorAll(S.EQUIP_SLOT)).map(s => ({
@@ -99,6 +99,7 @@ class State:
     play_ready: bool = False        # tela de personagens com o Jogar habilitado (o jogo voltou)
     notice: str = ""                # aviso da tela de personagens ('Server save...')
     motd: bool = False              # 'PATCH NOTES' aberto depois de entrar
+    daily: bool = False             # 'RECOMPENSA DIÁRIA' aberta (escolher a arma de treino)
     invite: list = field(default_factory=list)   # botoes do cartao de party na tela
     accept_all: bool | None = None  # 'aceitar tudo do lider' ligado? (None = sem party)
     costs_shared: bool | None = None
@@ -154,6 +155,7 @@ def parse_state(raw):
     pull = raw.get("pull") or {}
     st.pull_hunt, st.pull_tier = pull.get("hunt") or "", pull.get("tier") or ""
     st.motd = bool(raw.get("motd"))
+    st.daily = bool(raw.get("daily"))
     st.invite = raw.get("invite") or []
     switch = (raw.get("follow_switch") or "").casefold()
     st.accept_all = None if not switch else switch.startswith("parar")
@@ -434,6 +436,33 @@ class Account:
         if self._visible(S.MOTD):
             self._click(self.page.locator(S.MOTD_CLOSE).filter(has_text="Fechar").first)
             time.sleep(0.5)
+
+    def claim_daily_reward(self, weapon):
+        """'RECOMPENSA DIÁRIA': escolhe 'training <weapon>' (senao a 1a da vocacao) e 'Pegar a recompensa'.
+        CONFIRMADO ao vivo: o texto do cartao junta nome e rotulo sem espaco ('training axesua vocação') -> compara
+        pela 1a linha do innerText. 'Talvez depois' so' fecha na tela (o servidor oferece de novo): ultimo recurso."""
+        if not self._visible(S.DAILY_WINDOW):
+            return None
+        cards = self.page.evaluate("""(s) => Array.from(document.querySelectorAll(s)).map(c => ({
+            name: ((c.innerText || '').split(String.fromCharCode(10))[0] || '').trim().toLowerCase(),
+            off: c.classList.contains('off-vocation')}))""", S.DAILY_CARD)
+        index = next((n for n, c in enumerate(cards) if weapon and c["name"] == f"training {weapon}"), None)
+        if index is None:
+            index = next((n for n, c in enumerate(cards) if not c["off"]), None)
+            if index is None:
+                self.log(f"[{self.name}] recompensa diaria: nenhuma arma da vocacao - deixando pra depois")
+                self._click(S.DAILY_LATER, 3000)
+                return None
+            self.log(f"[{self.name}] recompensa diaria: '{weapon}' nao apareceu - pegando {cards[index]['name']}")
+        self._click(self.page.locator(S.DAILY_CARD).nth(index))
+        claim = self.page.locator(S.DAILY_CLAIM).first
+        if not self._wait(lambda: claim.is_enabled(), 4):
+            raise GameError("o botao 'Pegar a recompensa' nao habilitou")
+        self._click(claim)
+        if not self._wait(lambda: not self._visible(S.DAILY_WINDOW), 6):
+            raise GameError("a janela da recompensa diaria nao fechou")
+        self.log(f"[{self.name}] recompensa diaria: peguei {cards[index]['name']}")
+        return cards[index]["name"]
 
     def invite_to_party(self, names):
         """LIDER: Amigos -> botao direito em cada nome -> 'Convidar para a party'. Retorna os convidados."""

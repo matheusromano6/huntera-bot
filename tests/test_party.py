@@ -28,6 +28,11 @@ class PartyAccount(FakeAccount):
         self.world.calls.append(("motd", self.name))
         self.state.motd = False
 
+    def claim_daily_reward(self, weapon):
+        self.world.calls.append(("daily", self.name, weapon))
+        self.state.daily = False
+        return weapon
+
     def invite_to_party(self, names):
         self.world.calls.append(("invite", self.name, tuple(names)))
         for n in names:
@@ -94,6 +99,7 @@ class ParseTests(unittest.TestCase):
         st = parse_state({"in_city": True, "motd": True, "invite": ["SEGUIR O LÍDER", "MANTER A ATUAL"],
                           "follow_switch": "Aceitar tudo do líder", "costs": "Cada um paga o seu"})
         self.assertEqual((st.motd, st.accept_all, st.costs_shared), (True, False, False))
+        self.assertTrue(parse_state({"in_city": True, "daily": True}).daily)
         st = parse_state({"in_city": True, "follow_switch": "Parar de aceitar tudo", "costs": "Rateio ligado — nada gasto ainda"})
         self.assertEqual((st.accept_all, st.costs_shared), (True, True))
         self.assertIsNone(parse_state({"in_city": True}).accept_all)
@@ -156,6 +162,17 @@ class ServerSaveTests(unittest.TestCase):
         engine.tick()
         self.assertEqual(kinds(w, "train"), [])
         self.assertEqual(kinds(w, "start")[0][2:5], ("Lower Roshamuul", "Agressivo", True))
+
+    def test_daily_reward_takes_the_training_weapon_of_each_vocation(self):
+        w = world_after_server_save()
+        for name, voc in (("ALIADO UM", "Elite Knight"), ("ALIADO DOIS", "Elder Druid"), ("ALIADO TRES", "Royal Paladin")):
+            w.accounts[name].state.vocation = voc
+            w.accounts[name].state.daily = True
+        engine, clock, logs = engine_for(w)
+        engine.cfg["training"]["by_name"] = {"aliado um": "Sword Fighting"}      # escolha do usuario vale
+        engine.tick()
+        self.assertEqual(sorted(c[1:] for c in kinds(w, "daily")),
+                         [("ALIADO DOIS", "rod"), ("ALIADO TRES", "bow"), ("ALIADO UM", "sword")])
 
     def test_disabled_party_does_nothing(self):
         w = world_after_server_save()
