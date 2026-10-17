@@ -131,7 +131,7 @@ class SellTests(unittest.TestCase):
         self.assertEqual(sorted(page.dispatched), sorted([S.DISPATCH_BTN, S.QS_CONFIRM]))
 
     def test_other_click_errors_are_not_swallowed(self):
-        page = FakePage(rows(("cheese", True)), broken={S.QS_CONFIRM: "element is not visible"})
+        page = FakePage(rows(("cheese", True)), broken={S.QS_CONFIRM: "element is disabled"})
         with self.assertRaises(RuntimeError):
             self.acc(page).sell_all()
         self.assertEqual(page.dispatched, [])                 # sem 'intercepts': nao forca o clique
@@ -144,3 +144,27 @@ class SellTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ClickFallbackTests(unittest.TestCase):
+    def test_not_visible_button_is_clicked_directly(self):
+        events = []
+
+        class Loc:
+            first = property(lambda self: self)
+            def count(self): return 1
+            def click(self, timeout=0): raise Exception("Timeout 3000ms exceeded. element is not visible")
+            def wait_for(self, state=None, timeout=0): raise Exception("Timeout")
+            def dispatch_event(self, name): events.append(name)
+
+        Account(page=None, log=lambda m: None)._click(Loc())
+        self.assertEqual(events, ["click"])
+
+    def test_other_errors_still_raise(self):
+        class Loc:
+            first = property(lambda self: self)
+            def count(self): return 1
+            def click(self, timeout=0): raise Exception("element is disabled")
+
+        with self.assertRaises(Exception):
+            Account(page=None, log=lambda m: None)._click(Loc())

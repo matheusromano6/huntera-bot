@@ -221,9 +221,20 @@ class Account:
         try:
             locator.first.click(timeout=timeout)
         except Exception as error:
-            if "intercepts pointer events" not in str(error):
-                raise
-            locator.first.dispatch_event("click")
+            text = str(error)
+            if "intercepts pointer events" in text:
+                locator.first.dispatch_event("click")
+                return
+            # CONFIRMADO ao vivo (17/10, santuario): o botao existe mas fica 'not visible' por um instante (janela
+            # abrindo / IdleDeck sem desenhar a conta). Espera mais um pouco e, se continuar, clica direto nele.
+            if "not visible" in text and locator.count():
+                try:
+                    locator.first.wait_for(state="visible", timeout=4000)
+                    locator.first.click(timeout=timeout)
+                except Exception:
+                    locator.first.dispatch_event("click")
+                return
+            raise
 
     def _visible(self, selector):
         return self.page.evaluate(

@@ -199,6 +199,24 @@ class ImbuerTests(unittest.TestCase):
         engine.tick()
         self.assertIn("stonecutter axe", engine.imbuer.equipment("MR SORC"))
 
+    def test_shrine_that_does_not_open_is_not_retried_every_minute(self):
+        world, acc, engine, clock, logs = setup(phase="training")
+        calls = []
+
+        def broken(scan_allowed=True):
+            calls.append(1)
+            raise RuntimeError("Timeout 3000ms exceeded. element is not visible")
+        acc.shrine_read = broken
+        engine.tick()                                       # leitura + tentativa de imbuir
+        first = len(calls)
+        self.assertTrue(any("tento de novo em 10 min" in line for line in logs))
+        clock.t += 120
+        engine.tick()
+        self.assertEqual(len(calls), first)                 # quieto por 10 min
+        clock.t += 600
+        engine.tick()
+        self.assertGreater(len(calls), first)
+
     def test_active_with_time_left_does_not_trigger(self):
         items = {"vampire shield": [{"active": "Basic Demon Presence", "minutes": 20}]}
         world, acc, engine, clock, logs = setup(items=items)

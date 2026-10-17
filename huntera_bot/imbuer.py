@@ -14,6 +14,7 @@ BLOCK_NO_STOCK = 3600
 BLOCK_NO_GOLD = 1800
 BLOCK_ERROR = 1800
 MAX_TRIES = 3
+SCAN_FAIL_WAIT = 600       # santuario nao abriu: espera antes de tentar de novo (nao enche o log)
 
 
 def gp(value):
@@ -195,7 +196,10 @@ class Imbuer:
         try:
             self.scan(acc, st)
         except Exception as error:
-            self.log(f"[{st.name}] imbuements: nao consegui abrir o santuario ({error})")
+            self.log(f"[{st.name}] imbuements: nao consegui abrir o santuario ({str(error).splitlines()[0]}) - tento de novo em 10 min")
+            for task in self.tasks(st.name, early=early):
+                self._block(st.name, task, SCAN_FAIL_WAIT)
+            acc.close_windows()
             return
         tasks = self.tasks(st.name, early=early)
         for task in tasks:
